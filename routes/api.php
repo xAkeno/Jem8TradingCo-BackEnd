@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
@@ -56,4 +57,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/{cart}', [CartController::class, 'destroy']);
     Route::delete('/cart/product/{product}', [CartController::class, 'destroyByProduct']);
     Route::post('/cart/clear', [CartController::class, 'clear']);
+    // Checkout
+    Route::post('/checkout', [CheckoutController::class, 'store']);
 });
