@@ -6,19 +6,16 @@ use App\Http\Controllers\AccountController;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Middleware\EnsureTokenIsValid;
 
 Route::post('/login', [AccountController::class, 'login']);
 Route::post('/register', [AccountController::class, 'store']);
 Route::post('/verify', [AccountController::class, 'verifyEmail']);
 Route::post('/forgot-password', [AccountController::class, 'forgotPassword']);
 Route::post('/reset-password', [AccountController::class, 'resetPassword']);
-Route::get('/products/{id}', [ShopController::class, 'showProduct']);
-Route::post('/cart/add', [ShopController::class, 'addToCart']);
-Route::post('/products', [ShopController::class, 'addProduct']);
-Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
+
 // Routes that require authentication
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     // Route only accessible to authenticated users
     Route::get('/me', function(Request $request) {
@@ -43,5 +40,9 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['message' => 'Welcome verified user']);
     });
 
+    Route::get('/products/{id}', [ShopController::class, 'showProduct']);
+    Route::post('/cart/add', [ShopController::class, 'addToCart']);
+    Route::post('/products', [ShopController::class, 'addProduct']);
+    Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
     
 });
