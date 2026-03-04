@@ -74,8 +74,16 @@ class ShopController extends Controller
 
 
     // Show single product details with all images.(kukunin yung id ah)
+<<<<<<< HEAD
     public function showProduct($id){
         $product = Product::with('image')->find($id);
+=======
+<<<<<<< HEAD
+public function 
+=======
+    public function showProduct($request, $id){
+        $product = Product::with('ProductImages')->find($id);
+>>>>>>> f2a3a00b3f2395d0943b2134bb24c71732a9ac90
 
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
@@ -86,6 +94,7 @@ class ShopController extends Controller
             'image' => $product->image
         ],200);
     }
+>>>>>>> 8ee739177731040e4861b1a584d56f3d1a77b920
     // Remove item from cart (kukunin yung id)
     public function deleteFromCart(string $id){
         $cart = Cart::find($id);

@@ -1,7 +1,10 @@
 <?php
+<<<<<<< HEAD
+=======
 
 
 use App\Http\Controllers\ShopController;
+>>>>>>> 8ee739177731040e4861b1a584d56f3d1a77b920
 use App\Http\Controllers\AccountController;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -39,6 +42,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::middleware('verified')->get('/dashboard', function() {
         return response()->json(['message' => 'Welcome verified user']);
     });
+<<<<<<< HEAD
+});
+=======
 
     Route::get('/products/{id}', [ShopController::class, 'showProduct']);
     Route::post('/cart/add', [ShopController::class, 'addToCart']);
@@ -46,3 +52,4 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
     
 });
+>>>>>>> 8ee739177731040e4861b1a584d56f3d1a77b920
