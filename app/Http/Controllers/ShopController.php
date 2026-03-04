@@ -9,7 +9,7 @@ use App\Models\ProductImage;
 
 class ShopController extends Controller
 {
-    // gawin nyo nalang yung mga nasa list jan  
+    // gawin nyo nalang yung mga nasa list jan
     // Add product to cart
     public function addToCart(Request $request)
     {
@@ -23,13 +23,13 @@ class ShopController extends Controller
             'quantity' => 'required|integer|min:1',
             'product_id' => 'required|integer|exists:products,id'
         ]);
-        
+
         $Cart = Cart::create([
             'quantity' => $request->quantity,
             'product_id' => $request->product_id,
             // 'account_id' => $user->id   // need updates
         ]);
-        
+
         if (!$Cart) {
             return response()->json(['message' => 'Failed to add product to cart'], 500);
         }
@@ -69,22 +69,18 @@ class ShopController extends Controller
 
 
     // Show single product details with all images.(kukunin yung id ah)
-<<<<<<< HEAD
-public function 
-=======
     public function showProduct($request, $id){
         $product = Product::with('ProductImages')->find($id);
 
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
-        
+
         return response()->json([
             'product' => $product,
             'images' => $product->ProductImages
         ],200);
     }
->>>>>>> 8ee739177731040e4861b1a584d56f3d1a77b920
     // Remove item from cart (kukunin yung id)
     public function deleteFromCart(string $id){
         $Cart = Cart::find($id);
@@ -102,15 +98,15 @@ public function
     public function updateCartQuantity(Request $request, string $id){
         $request->validate([
             'quantity' => 'required|integer|min:1'
-            
+
         ]);
 
         $Cart = Cart::find($id);
-        
+
         if(!$Cart){
             return response()->json(['message' => 'Cart item not found'], 404);
         }
-        
+
 
         $Cart->quantity = $request->quantity;
         $Cart->save();
@@ -119,9 +115,9 @@ public function
             'message' => 'Cart quantity updated successfully',
             'cart' => $Cart
         ], 200);
-        
+
     }
-    
+
 
     // View current user's cart (kukunin yung id nag user galing sa cookie)
 
