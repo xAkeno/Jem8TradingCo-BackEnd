@@ -90,11 +90,32 @@ class AccountController extends Controller
     // ==============================
     public function logout(Request $request)
     {
-        if ($request->user()) {
-            $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        if ($user) {
+
+            // Delete token only if it exists
+            if ($request->user()->currentAccessToken()) {
+                $request->user()->currentAccessToken()->delete();
+            }
         }
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Logged out successfully',
+        ])->withCookie(
+            cookie(
+                'auth_token',
+                '',
+                -1,           // Expire immediately
+                '/',          // MUST match path
+                null,         // MUST match domain
+                true,         // MUST match secure
+                true,         // httpOnly
+                false,
+                'None'        // MUST match SameSite
+            )
+        );
     }
 
     // ==============================
