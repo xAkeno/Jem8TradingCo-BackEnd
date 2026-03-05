@@ -40,7 +40,7 @@ return new class extends Migration
                   ->on('discounts')
                   ->onDelete('set null');
         });
-        }
+        }   
     }
 
     /**

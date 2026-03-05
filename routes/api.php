@@ -1,6 +1,6 @@
 <?php
 
-
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\AccountController;
 use Illuminate\Http\Request;
@@ -14,6 +14,14 @@ Route::post('/register', [AccountController::class, 'store']);
 Route::post('/verify', [AccountController::class, 'verifyEmail']);
 Route::post('/forgot-password', [AccountController::class, 'forgotPassword']);
 Route::post('/reset-password', [AccountController::class, 'resetPassword']);
+
+route::get('/products/{id}', [ShopController::class, 'showProduct']);
+//blogs
+Route::get('/blogs', [BlogController::class, 'indexBlog']);
+Route::post('/blogs', [BlogController::class, 'storeBlog']);
+Route::get('/blogs/{id}', [BlogController::class, 'showAllBlog']);
+Route::put('/blogs/{id}', [BlogController::class, 'blogUpdates']);
+
 
 // Routes that require authentication
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
