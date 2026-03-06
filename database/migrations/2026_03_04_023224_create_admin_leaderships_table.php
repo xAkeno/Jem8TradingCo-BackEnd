@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-            
+            if (!Schema::hasTable('admin_leaderships')) {
             Schema::create('admin_leaderships', function (Blueprint $table) {
                 $table->id('leadership_id');
                 $table->unsignedBigInteger('user_id');
@@ -25,7 +25,7 @@ return new class extends Migration
                     ->on('users')
                     ->onDelete('cascade');
             });
-        
+            }
     }
 
     /**

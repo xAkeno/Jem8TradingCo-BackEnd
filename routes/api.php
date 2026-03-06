@@ -12,18 +12,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\EnsureTokenIsValid;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\UserAddressController;
+// Public routes
 Route::post('/login', [AccountController::class, 'login']);
 Route::post('/register', [AccountController::class, 'store']);
 Route::post('/verify', [AccountController::class, 'verifyEmail']);
 Route::post('/forgot-password', [AccountController::class, 'forgotPassword']);
 Route::post('/reset-password', [AccountController::class, 'resetPassword']);
 
-route::get('/products/{id}', [ShopController::class, 'showProduct']);
-//blogs
-Route::get('/blogs', [BlogController::class, 'indexBlog']);
-Route::post('/blogs', [BlogController::class, 'storeBlog']);
-Route::get('/blogs/{id}', [BlogController::class, 'showAllBlog']);
-Route::put('/blogs/{id}', [BlogController::class, 'blogUpdates']);
+Route::get('/products/{id}', [ShopController::class, 'showProduct']);
 
 // Reviews (public)
 Route::get('/reviews', [ReviewController::class, 'all']);
@@ -32,14 +28,13 @@ Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 
 
 // Routes that require authentication
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
-    // Route only accessible to authenticated users
+    // Account
     Route::get('/me', [AccountController::class, 'me']);
     Route::post('/profile/update', [AccountController::class, 'updateProfile']);
     Route::post('/profile/update-image', [AccountController::class, 'updateProfileImage']);
     Route::delete('/delete-account', [AccountController::class, 'destroy']);
-
     Route::post('/logout', [AccountController::class, 'logout']);
 
     // Email verification routes
@@ -53,18 +48,35 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['message' => 'Verification link sent']);
     })->middleware(['throttle:6,1'])->name('verification.send');
 
-    // Example: only verified users can access this route
-    Route::middleware('verified')->get('/dashboard', function() {
+    Route::middleware('verified')->get('/dashboard', function () {
         return response()->json(['message' => 'Welcome verified user']);
     });
 
-    // Authenticated review routes
+    // Shop
+    Route::post('/cart/add', [ShopController::class, 'addToCart']);
+    Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
+
+    // Admin Products
+    Route::post('/admin/products', [AdminProductController::class, 'addProduct']);
+    Route::get('/admin/products', [AdminProductController::class, 'showAllProducts']);
+    Route::get('/admin/products/{id}', [AdminProductController::class, 'showProduct']);
+    Route::put('/admin/products/{id}', [AdminProductController::class, 'updateProduct']);
+    Route::delete('/admin/products/{id}', [AdminProductController::class, 'deleteProduct']);
+
+    // Blogs
+    Route::get('/blogs', [BlogController::class, 'indexBlog']);
+    Route::post('/blogs', [BlogController::class, 'storeBlog']);
+    Route::get('/blogs/{id}', [BlogController::class, 'showAllBlog']);
+    Route::put('/blogs/{id}', [BlogController::class, 'blogUpdates']);
+    Route::delete('/blogs/{id}', [BlogController::class, 'deleteBlog']);
+
+    // Reviews (authenticated)
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store']);
     Route::put('/reviews/{review}', [ReviewController::class, 'update']);
     Route::patch('/reviews/{review}', [ReviewController::class, 'update']);
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 
-    // Cart routes
+    // Cart
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart', [CartController::class, 'store']);
     Route::put('/cart/{cart}', [CartController::class, 'update']);
@@ -72,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/{cart}', [CartController::class, 'destroy']);
     Route::delete('/cart/product/{product}', [CartController::class, 'destroyByProduct']);
     Route::post('/cart/clear', [CartController::class, 'clear']);
+
     // Checkout
     Route::post('/checkout', [CheckoutController::class, 'store']);
 

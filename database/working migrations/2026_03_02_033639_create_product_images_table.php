@@ -11,18 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('cart')) {
-        Schema::create('cart', function (Blueprint $table) {
-            $table->id('cart_id'); // Primary Key
-            $table->unsignedBigInteger('user_id'); // FK to users
+        if (!Schema::hasTable('product_images')) {
+        Schema::create('product_images', function (Blueprint $table) {
+            $table->id();
             $table->unsignedBigInteger('product_id'); // FK to products
-            $table->integer('quantity')->default(1);
-            $table->decimal('total', 10, 2);
-            $table->string('status')->default('pending'); // pending, completed
+            $table->string('image_path'); // store image filename/path
             $table->timestamps();
 
-            // foreign keys
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('product_id')->references('product_id')->on('products')->onDelete('cascade');
         });
         }
@@ -33,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cart');
+        Schema::dropIfExists('product_images');
     }
 };

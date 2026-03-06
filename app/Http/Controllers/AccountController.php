@@ -85,7 +85,7 @@ class AccountController extends Controller
             60*24*30,   // 30 days
             '/',        // path
             null,       // domain null for localhost
-            false,      // secure false for local dev
+            true,      // secure false for local dev
             true,       // httpOnly
             false,      // raw
             'None'       // sameSite safe for local dev
@@ -117,7 +117,7 @@ class AccountController extends Controller
             'message' => 'Logged out successfully',
         ])->withCookie(
             cookie(
-                'auth_token',
+                'jem8_token',
                 '',
                 -1,           // Expire immediately
                 '/',          // MUST match path

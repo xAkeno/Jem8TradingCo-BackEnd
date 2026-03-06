@@ -23,16 +23,27 @@ class UserAddressController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'type' => 'required|in:personal,company',
+
+            // company fields (optional)
             'company_name'   => 'nullable|string|max:255',
             'company_role'   => 'nullable|string|max:255',
             'company_number' => 'nullable|string|max:50',
             'company_email'  => 'nullable|email|max:255',
-            'address'        => 'required|string',
-            'status'         => 'nullable|in:active,inactive',
+
+            // address fields
+            'street'       => 'required|string|max:255',
+            'barangay'     => 'nullable|string|max:255',
+            'city'         => 'required|string|max:255',
+            'province'     => 'nullable|string|max:255',
+            'postal_code'  => 'nullable|string|max:20',
+            'country'      => 'nullable|string|max:255',
+
+            'status'       => 'nullable|in:active,inactive',
         ]);
 
         $address = UserAddress::create([
-            'user_id'        => Auth::id(),
+            'user_id' => Auth::id(),
             ...$validated,
         ]);
 
@@ -46,8 +57,8 @@ class UserAddressController extends Controller
     public function show($id)
     {
         $address = UserAddress::where('user_id', Auth::id())
-                              ->where('user_address_id', $id)
-                              ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         return response()->json([
             'status' => 200,
@@ -59,16 +70,25 @@ class UserAddressController extends Controller
     public function update(Request $request, $id)
     {
         $address = UserAddress::where('user_id', Auth::id())
-                              ->where('user_address_id', $id)
-                              ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         $validated = $request->validate([
+            'type' => 'sometimes|in:personal,company',
+
             'company_name'   => 'nullable|string|max:255',
             'company_role'   => 'nullable|string|max:255',
             'company_number' => 'nullable|string|max:50',
             'company_email'  => 'nullable|email|max:255',
-            'address'        => 'required|string',
-            'status'         => 'nullable|in:active,inactive',
+
+            'street'       => 'sometimes|string|max:255',
+            'barangay'     => 'nullable|string|max:255',
+            'city'         => 'sometimes|string|max:255',
+            'province'     => 'nullable|string|max:255',
+            'postal_code'  => 'nullable|string|max:20',
+            'country'      => 'nullable|string|max:255',
+
+            'status'       => 'nullable|in:active,inactive',
         ]);
 
         $address->update($validated);
@@ -83,8 +103,8 @@ class UserAddressController extends Controller
     public function destroy($id)
     {
         $address = UserAddress::where('user_id', Auth::id())
-                              ->where('user_address_id', $id)
-                              ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         $address->delete();
 
