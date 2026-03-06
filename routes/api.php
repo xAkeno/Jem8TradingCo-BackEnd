@@ -9,6 +9,9 @@ use App\Http\Controllers\CheckoutController;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\EnsureTokenIsValid;
+use App\Http\Controllers\AdminProductController;
+use App\Http\Controllers\UserAddressController;
 Route::post('/login', [AccountController::class, 'login']);
 Route::post('/register', [AccountController::class, 'store']);
 Route::post('/verify', [AccountController::class, 'verifyEmail']);
@@ -71,4 +74,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cart/clear', [CartController::class, 'clear']);
     // Checkout
     Route::post('/checkout', [CheckoutController::class, 'store']);
+
+    Route::get('/addresses', [UserAddressController::class, 'index']);
+    Route::post('/addresses', [UserAddressController::class, 'store']);
+    Route::get('/addresses/{id}', [UserAddressController::class, 'show']);
+    Route::put('/addresses/{id}', [UserAddressController::class, 'update']);
+    Route::delete('/addresses/{id}', [UserAddressController::class, 'destroy']);
 });
