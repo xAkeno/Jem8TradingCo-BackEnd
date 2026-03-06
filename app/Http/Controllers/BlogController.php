@@ -126,7 +126,7 @@ class BlogController extends Controller
             return(response()->json([
                 'status'=>'success',
                 'data'=>$id
-            ],200));
+            ],201));
         }
 
         }catch(\Illuminate\Database\Eloquent\ModelNotFoundException $e){

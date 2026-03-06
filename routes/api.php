@@ -31,11 +31,8 @@ Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 
 
 // Routes that require authentication
-<<<<<<< HEAD
 Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
-=======
-Route::middleware([EnsureTokenIsValid::class])->group(function () {
->>>>>>> 9468f2a809568546a3482257aea299ede0f08241
+
 
     // Account
     Route::get('/me', [AccountController::class, 'me']);
@@ -120,4 +117,4 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
      Route::post('/products', [ShopController::class, 'addProduct']);
     Route::put('/products/{id}', [ShopController::class, 'updateProduct']);
     Route::delete('/products/{id}', [ShopController::class, 'deleteProduct']);
-});
+ });
