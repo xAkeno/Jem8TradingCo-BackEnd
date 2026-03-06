@@ -16,11 +16,6 @@ Route::post('/forgot-password', [AccountController::class, 'forgotPassword']);
 Route::post('/reset-password', [AccountController::class, 'resetPassword']);
 
 route::get('/products/{id}', [ShopController::class, 'showProduct']);
-//blogs
-Route::get('/blogs', [BlogController::class, 'indexBlog']);
-Route::post('/blogs', [BlogController::class, 'storeBlog']);
-Route::get('/blogs/{id}', [BlogController::class, 'showAllBlog']);
-Route::put('/blogs/{id}', [BlogController::class, 'blogUpdates']);
 
 
 // Routes that require authentication
@@ -58,4 +53,12 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/admin/products/{id}', [AdminProductController::class, 'showProduct']);
     Route::put('/admin/products/{id}', [AdminProductController::class, 'updateProduct']);
     Route::delete('/admin/products/{id}', [AdminProductController::class, 'deleteProduct']);
+
+    //blogs
+    Route::get('/blogs', [BlogController::class, 'indexBlog']);
+    Route::post('/blogs', [BlogController::class, 'storeBlog']);
+    Route::get('/blogs/{id}', [BlogController::class, 'showAllBlog']);
+    Route::put('/blogs/{id}', [BlogController::class, 'blogUpdates']);
+    Route::delete('/blogs/{id}', [BlogController::class, 'deleteBlog']);
+    
 });

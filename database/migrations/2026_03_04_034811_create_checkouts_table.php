@@ -4,6 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+use function Symfony\Component\String\s;
+
 return new class extends Migration
 {
     /**
@@ -11,6 +13,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+
+        Schema::disableForeignKeyConstraints();
         if (!Schema::hasTable('checkouts')) {
         Schema::create('checkouts', function (Blueprint $table) {
             $table->id('checkout_id');
@@ -31,16 +35,17 @@ return new class extends Migration
                   ->onDelete('cascade');
 
             $table->foreign('cart_id')
-                  ->references('id')
+                  ->references('cart_id')
                   ->on('carts')
                   ->onDelete('cascade');
 
             $table->foreign('discount_id')
-                  ->references('id')
+                  ->references('discount_id')
                   ->on('discounts')
                   ->onDelete('set null');
         });
         }   
+        Schema::enableForeignKeyConstraints();
     }
 
     /**

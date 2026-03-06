@@ -8,13 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::disableForeignKeyConstraints();
         if (!Schema::hasTable('blog')) {
             Schema::create('blog', function (Blueprint $table) {
                 $table->id('blog_id');
                 $table->unsignedBigInteger('category_blog_id');
                 $table->string('blog_title', 255);
                 $table->text('blog_text');
-                $table->string('featured_image', 255);
+                $table->string('featured_image', 255)->nullable();
                 $table->text('images')->nullable();
                 $table->enum('status', ['draft', 'published', 'archived']);
                 $table->dateTime('update_at')->nullable();
@@ -27,6 +28,7 @@ return new class extends Migration
                       ->onDelete('cascade');
             });
         }
+        Schema::enableForeignKeyConstraints();
     }
 
     public function down(): void

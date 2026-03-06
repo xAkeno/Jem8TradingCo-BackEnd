@@ -22,7 +22,7 @@ return new class extends Migration
 
             $table->foreign('chatroom_id')
                   ->references('chatroom_id')
-                  ->on('create_live_chats_table')
+                  ->on('live_chats')
                   ->onDelete('cascade');
             });
         }
