@@ -31,6 +31,29 @@ return new class extends Migration
             $table->timestamps();
         });
         }
+
+        DB::table('accounts')->insert([
+            [
+                'first_name' => 'Admin',
+                'last_name' => 'User',
+                'phone_number' => '09000000001',
+                'email' => 'admin@example.com',
+                'password' => Hash::make('password123'),
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'first_name' => 'Normal',
+                'last_name' => 'User',
+                'phone_number' => '09000000002',
+                'email' => 'user@example.com',
+                'password' => Hash::make('password123'),
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        ]);
     }
 
     /**

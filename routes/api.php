@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\EnsureTokenIsValid;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\UserAddressController;
-
 // Public routes
 Route::post('/login', [AccountController::class, 'login']);
 Route::post('/register', [AccountController::class, 'store']);
@@ -32,7 +31,11 @@ Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 
 
 // Routes that require authentication
+<<<<<<< HEAD
 Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
+=======
+Route::middleware([EnsureTokenIsValid::class])->group(function () {
+>>>>>>> 9468f2a809568546a3482257aea299ede0f08241
 
     // Account
     Route::get('/me', [AccountController::class, 'me']);
@@ -94,7 +97,18 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
     // Checkout
     
 
-    // Addresses
+    // Admin product management (requires auth)
+    Route::prefix('admin')->group(function () {
+        Route::post('/products', [AdminProductController::class, 'addProduct']);
+        Route::get('/products', [AdminProductController::class, 'showAllProducts']);
+        Route::get('/products/{id}', [AdminProductController::class, 'showProduct']);
+        Route::post('/products/{id}', [AdminProductController::class, 'updateProduct']);
+        Route::put('/products/{id}', [AdminProductController::class, 'updateProduct']);
+        Route::delete('/products/{id}', [AdminProductController::class, 'deleteProduct']);
+        Route::post('/products/test-upload', [AdminProductController::class, 'testUpload']);
+        Route::get('/products/storage-info', [AdminProductController::class, 'storageInfo']);
+    });
+
     Route::get('/addresses', [UserAddressController::class, 'index']);
     Route::post('/addresses', [UserAddressController::class, 'store']);
     Route::get('/addresses/{id}', [UserAddressController::class, 'show']);
