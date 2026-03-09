@@ -4,6 +4,8 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\AdminLeadershipController;
+
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use Illuminate\Http\Request;
@@ -114,7 +116,11 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
 
 
     //prods
-     Route::post('/products', [ShopController::class, 'addProduct']);
+    Route::post('/products', [ShopController::class, 'addProduct']);
     Route::put('/products/{id}', [ShopController::class, 'updateProduct']);
     Route::delete('/products/{id}', [ShopController::class, 'deleteProduct']);
+
+    //admin leadership
+    Route::post('/admin/imgs',[AdminLeadershipController::class, 'index']);
+    
  });
