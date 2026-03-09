@@ -2,21 +2,34 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class UserAddress extends Model
 {
-    protected $table = 'user_addresses';
+    use HasFactory;
 
-    protected $primaryKey = 'user_address_id';
+    protected $table = 'user_addresses';
 
     protected $fillable = [
         'user_id',
+        'type',
         'company_name',
         'company_role',
         'company_number',
         'company_email',
-        'address',
-        'status'
+        'street',
+        'barangay',
+        'city',
+        'province',
+        'postal_code',
+        'country',
+        'status',
     ];
+
+    // optional: relation to user/account
+    public function user()
+    {
+        return $this->belongsTo(Account::class, 'user_id');
+    }
 }
