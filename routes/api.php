@@ -5,7 +5,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AdminLeadershipController;
-
+use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use Illuminate\Http\Request;
@@ -27,15 +27,11 @@ Route::post('/reset-password', [AccountController::class, 'resetPassword']);
 Route::get('/reviews', [ReviewController::class, 'all']);
 Route::get('/reviews/{review}', [ReviewController::class, 'show']);
 Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
-<<<<<<< HEAD
 
 //Prods
 
 
 
-=======
-Route::get('/categories', [CategoryController::class, 'index']);
->>>>>>> b72102445d6da729602f0c0ea850cc8c9f12f57c
 
 // Routes that require authentication
 Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
@@ -64,20 +60,17 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
     });
 
     // Shop
-<<<<<<< HEAD
     // Route::get('/products', [ShopController::class, 'index']);
     // Route::get('/products/category/{category}', [ShopController::class, 'productsByCategory']);
     // Route::post('/products', [ShopController::class, 'addProduct']);
     // Route::put('/products/{id}', [ShopController::class, 'updateProduct']);
     
     //
-=======
     //Hello
     Route::post('/cart/add', [ShopController::class, 'addToCart']);
     Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
     Route::patch('/cart/{id}',[ShopController::class, 'updateCartQuantity']);
     Route::get('/cart',[ShopController::class, 'viewCart']);
->>>>>>> b72102445d6da729602f0c0ea850cc8c9f12f57c
 
     // Admin Products
     Route::post('/admin/products', [AdminProductController::class, 'addProduct']);
@@ -100,21 +93,11 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 
     // Cart
-<<<<<<< HEAD
     Route::post('/cart/add', [ShopController::class, 'addToCart']);
     Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
     Route::put('/cart/{id}', [ShopController::class, 'updateCartQuantity']);
     Route::get('/products/{id}', [ShopController::class, 'showProduct']);
 
-=======
-    // Route::get('/cart', [CartController::class, 'index']);
-    // Route::post('/cart', [CartController::class, 'store']);
-    // Route::put('/cart/{cart}', [CartController::class, 'update']);
-    // Route::patch('/cart/{cart}', [CartController::class, 'update']);
-    // Route::delete('/cart/{cart}', [CartController::class, 'destroy']);
-    // Route::delete('/cart/product/{product}', [CartController::class, 'destroyByProduct']);
-    // Route::post('/cart/clear', [CartController::class, 'clear']);
->>>>>>> b72102445d6da729602f0c0ea850cc8c9f12f57c
 
     // Checkout
     
@@ -139,6 +122,17 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
         Route::get('/imgs/{id}',      [AdminLeadershipController::class, 'adminImgShow']);   // fix: was pointing to wrong method
         Route::put('/imgs/{id}',      [AdminLeadershipController::class, 'adminImgUpdate']);
         Route::delete('/imgs/{id}',   [AdminLeadershipController::class, 'adminImgDelete']);
+    });
+
+    //admin backup
+    Route::prefix('admin')->group(function () {
+        Route::prefix('backup')->group(function () {
+            Route::get('/',              [AdminBackupController::class, 'adminHistoryBackup']);
+            Route::post('/run',          [AdminBackupController::class, 'adminRunBackup']);
+            Route::get('/download/{id}', [AdminBackupController::class, 'adminDownloadBackup']);
+            Route::delete('/{id}',       [AdminBackupController::class, 'adminDeleteBackup']);
+            Route::post('/restore',      [AdminBackupController::class, 'adminUploadRestore']);
+        });
     });
 
 });

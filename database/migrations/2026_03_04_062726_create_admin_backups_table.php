@@ -16,6 +16,7 @@ return new class extends Migration
                 $table->enum('status', ['pending', 'completed', 'failed']);
                 $table->string('backup_path')->nullable();
                 $table->string('file_name')->nullable();
+                $table->softDeletes();
                 $table->timestamps();
             });
     }
