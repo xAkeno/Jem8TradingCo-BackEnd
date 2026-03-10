@@ -13,6 +13,9 @@ use App\Http\Middleware\EnsureTokenIsValid;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ContactController;
+
+
 // Public routes
 Route::post('/login', [AccountController::class, 'login']);
 Route::post('/register', [AccountController::class, 'store']);
@@ -27,7 +30,7 @@ Route::get('/reviews', [ReviewController::class, 'all']);
 Route::get('/reviews/{review}', [ReviewController::class, 'show']);
 Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
-
+Route::post('/contact', [ContactController::class, 'store']);
 // Routes that require authentication
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
@@ -98,4 +101,11 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/addresses/{id}', [UserAddressController::class, 'show']);
     Route::put('/addresses/{id}', [UserAddressController::class, 'update']);
     Route::delete('/addresses/{id}', [UserAddressController::class, 'destroy']);
+});
+Route::middleware([EnsureTokenIsValid::class])->group(function () {
+    Route::get('/admin/contacts',              [ContactController::class, 'index']);
+    Route::get('/admin/contacts/{id}',         [ContactController::class, 'show']);
+    Route::patch('/admin/contacts/{id}/status',[ContactController::class, 'updateStatus']);
+    Route::delete('/admin/contacts/{id}',      [ContactController::class, 'destroy']);
+    Route::post('/admin/contacts/{id}/reply', [ContactController::class, 'reply']);
 });
