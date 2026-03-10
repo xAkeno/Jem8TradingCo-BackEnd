@@ -54,6 +54,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     });
 
     // Shop
+    //Hello
     Route::post('/cart/add', [ShopController::class, 'addToCart']);
     Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
     Route::patch('/cart/{id}',[ShopController::class, 'updateCartQuantity']);
