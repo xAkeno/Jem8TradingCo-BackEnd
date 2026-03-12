@@ -141,7 +141,7 @@ class ShopController extends Controller
             ], 404);
 
         }catch(\Exception $e){
-             return response()->json([
+            return response()->json([
                 'status' => 'error',
                 'type' => 'server',
                 'message' => $e->getMessage()
