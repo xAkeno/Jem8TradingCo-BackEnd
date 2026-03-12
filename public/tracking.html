@@ -14,7 +14,22 @@
     <button id="simulate">Simulate POST</button>
   </div>
   <div id="map"></div>
-  <div id="log"></div>
+  <div style="padding:8px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; background:#fff">
+    <div style="display:flex;gap:8px;align-items:center">
+      <label>Destination Lat: <input id="destLat" value="14.5546" style="width:120px" /></label>
+      <label>Lng: <input id="destLng" value="121.0244" style="width:120px" /></label>
+      <label>Fallback (min): <input id="fallback" value="30" style="width:60px" /></label>
+    </div>
+    <div style="margin-left:auto; text-align:right">
+      <div id="etaBadge" style="font-size:18px;font-weight:700;color:#1f2937">ETA: —</div>
+      <div id="minutesLeft" style="font-size:28px;font-weight:800;color:#059669">— min</div>
+      <div style="width:220px;background:#e5e7eb;border-radius:6px;overflow:hidden;margin-top:6px">
+        <div id="etaProgress" style="height:10px;width:0%;background:#0369a1"></div>
+      </div>
+      <div id="meta" style="font-size:12px;color:#374151;margin-top:6px">Speed: — m/s · Accuracy: — m</div>
+    </div>
+  </div>
+  <div id="log" style="padding:8px;height:18vh;overflow:auto;background:#f7f7f7;font-family:monospace"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
@@ -57,16 +72,62 @@
         log('LocationUpdated received: ' + JSON.stringify(e));
         const lat = e.lat || e.location?.lat || e.location?.lat;
         const lng = e.lng || e.location?.lng || e.location?.lng;
+        const speed = e.speed || e.location?.speed || null; // m/s
+        const ts = e.created_at ? new Date(e.created_at).getTime() : Date.now();
         if(!lat || !lng) return;
         const latlng = [parseFloat(lat), parseFloat(lng)];
         poly.addLatLng(latlng);
         if(!marker) marker = L.marker(latlng).addTo(map);
         else marker.setLatLng(latlng);
         map.panTo(latlng);
+
+        // ETA calculation
+        const destLat = parseFloat(document.getElementById('destLat').value) || START_LAT;
+        const destLng = parseFloat(document.getElementById('destLng').value) || START_LNG;
+        const fallbackMin = parseFloat(document.getElementById('fallback').value) || 30;
+
+        function haversine(a,b){
+          const R=6371000; const toRad=v=>v*Math.PI/180;
+          const dLat=toRad(b[0]-a[0]); const dLon=toRad(b[1]-a[1]);
+          const lat1=toRad(a[0]), lat2=toRad(b[0]);
+          const x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2);
+          const c=2*Math.atan2(Math.sqrt(x), Math.sqrt(1-x)); return R*c;
+        }
+
+        const remMeters = haversine(latlng, [destLat, destLng]);
+        let etaSeconds = fallbackMin * 60;
+        if(speed && speed > 0.1){
+          etaSeconds = remMeters / speed;
+        }
+        // clamp eta to [0, fallback]
+        etaSeconds = Math.max(0, Math.min(etaSeconds, fallbackMin * 60));
+        const etaDate = new Date(Date.now() + Math.round(etaSeconds*1000));
+
+        // Display
+        const minutesLeft = Math.ceil(etaSeconds/60);
+        document.getElementById('etaBadge').innerText = 'ETA: ' + etaDate.toLocaleTimeString();
+        document.getElementById('minutesLeft').innerText = minutesLeft + ' min';
+        const pct = Math.round((1 - (etaSeconds / (fallbackMin*60))) * 100);
+        document.getElementById('etaProgress').style.width = pct + '%';
+        document.getElementById('meta').innerText = 'Speed: ' + (speed? speed.toFixed(2) : '—') + ' m/s · Accuracy: ' + (e.accuracy || e.location?.accuracy || '—') + ' m';
       });
 
-      // Load recent points once
-      fetch('/api/public/locations/' + trip + '/recent')
+      // Load trip info and recent points once
+      fetch('/api/public/trips/' + trip)
+        .then(r => r.json())
+        .then(json => {
+          if(json.trip){
+            const t = json.trip;
+            if(t.dest_lat && t.dest_lng){
+              document.getElementById('destLat').value = t.dest_lat;
+              document.getElementById('destLng').value = t.dest_lng;
+            }
+            if(t.start_lat && t.start_lng){
+              map.setView([t.start_lat, t.start_lng], 15);
+            }
+          }
+        }).catch(()=>{}).finally(()=>{
+          fetch('/api/public/locations/' + trip + '/recent')
         .then(r => r.json())
         .then(json => {
           log('Loaded recent points: ' + (json.points?.length || 0));
@@ -81,6 +142,7 @@
             }
           }
         }).catch(err => log('Recent fetch error: ' + err));
+        });
 
       log('Connected to trip.' + trip);
     });

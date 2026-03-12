@@ -8,11 +8,36 @@
 </head>
 <body>
   <h3>Driver Tracking (Mobile Browser)</h3>
-  <label>Trip ID: <input id="trip" value="makati-start" /></label>
-  <button id="start">Start</button>
-  <button id="stop" disabled>Stop</button>
-  <div id="status">Status: idle</div>
-  <div id="log"></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <label>Trip ID: <input id="trip" value="makati-start" style="width:160px" /></label>
+    <label>Dest Lat: <input id="destLat" value="14.5546" style="width:120px" /></label>
+    <label>Dest Lng: <input id="destLng" value="121.0244" style="width:120px" /></label>
+    <label>Fallback (min): <input id="fallback" value="30" style="width:60px" /></label>
+    <button id="start">Start</button>
+    <button id="stop" disabled>Stop</button>
+  </div>
+
+  <div id="status" style="margin-top:8px;font-weight:600">Status: idle</div>
+  <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+    <div style="min-width:220px">
+      <div><strong>Last Position</strong></div>
+      <div id="lastPos">—</div>
+    </div>
+    <div style="min-width:220px">
+      <div><strong>Telemetry</strong></div>
+      <div id="telemetry">Speed: — m/s · Bearing: —° · Accuracy: — m</div>
+    </div>
+    <div style="min-width:220px">
+      <div><strong>ETA</strong></div>
+      <div id="etaDriver">ETA: —</div>
+      <div id="minutesLeftDriver" style="font-size:20px;font-weight:700;color:#059669">— min</div>
+    </div>
+    <div style="flex:1;min-width:220px">
+      <div><strong>Last Send</strong></div>
+      <div id="lastSend">—</div>
+    </div>
+  </div>
+  <div id="log" style="margin-top:8px;font-family:monospace;white-space:pre-wrap"></div>
 
   <script>
     const statusEl = document.getElementById('status');
@@ -21,6 +46,19 @@
 
     let watchId = null;
     let sending = false;
+    let lastPos = null; // {lat,lng,ts}
+
+    function haversine(a, b){
+      const R = 6371000; // meters
+      const toRad = v => v * Math.PI/180;
+      const dLat = toRad(b.lat - a.lat);
+      const dLon = toRad(b.lng - a.lng);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+      const x = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+      return R * c;
+    }
 
     async function sendPoint(payload){
       try{
@@ -32,6 +70,7 @@
         const j = await res.json();
         if(!res.ok) throw new Error(JSON.stringify(j));
         log('Sent: ' + JSON.stringify(j.location));
+        document.getElementById('lastSend').innerText = new Date().toISOString() + ' • id:' + (j.location?.id || '—');
       } catch(e){
         log('Send error: ' + e);
       }
@@ -40,6 +79,24 @@
     document.getElementById('start').addEventListener('click', async ()=>{
       const trip = document.getElementById('trip').value.trim();
       if(!trip) return alert('Enter trip id');
+
+      // try load trip info to prefill dest/start
+      try{
+        const r = await fetch('/api/public/trips/' + trip);
+        if(r.ok){
+          const j = await r.json();
+          if(j.trip){
+            const t = j.trip;
+            if(t.dest_lat && t.dest_lng) {
+              document.getElementById('destLat').value = t.dest_lat;
+              document.getElementById('destLng').value = t.dest_lng;
+            }
+            if(t.start_lat && t.start_lng){
+              // nothing to change on driver page, but we could show it
+            }
+          }
+        }
+      } catch(e){}
 
       if(!('geolocation' in navigator)){
         alert('Geolocation not supported');
@@ -55,18 +112,73 @@
       statusEl.innerText = 'Status: watching position';
       // high accuracy; call on each position update
       watchId = navigator.geolocation.watchPosition(pos => {
+        const now = Date.now();
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+        let speed = pos.coords.speed; // m/s or null
+        let bearing = pos.coords.heading;
+
+        // compute speed and bearing when unavailable
+        if((speed === null || speed === undefined) && lastPos){
+          const dt = (now - lastPos.ts) / 1000; // seconds
+          if(dt > 0){
+            const d = haversine({lat: lastPos.lat, lng: lastPos.lng}, {lat, lng});
+            speed = d / dt; // m/s
+          }
+        }
+        if((bearing === null || bearing === undefined) && lastPos){
+          const y = Math.sin((lng-lastPos.lng)*Math.PI/180) * Math.cos(lat*Math.PI/180);
+          const x = Math.cos(lastPos.lat*Math.PI/180)*Math.sin(lat*Math.PI/180) - Math.sin(lastPos.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.cos((lng-lastPos.lng)*Math.PI/180);
+          bearing = (Math.atan2(y,x) * 180/Math.PI + 360) % 360;
+        }
+
         const payload = {
           trip_id: trip,
           user_id: null,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          speed: pos.coords.speed,
-          bearing: pos.coords.heading
+          lat: lat,
+          lng: lng,
+          accuracy: accuracy,
+          speed: speed,
+          bearing: bearing,
+          timestamp: new Date(now).toISOString()
         };
+
+        document.getElementById('lastPos').innerText = lat.toFixed(6) + ', ' + lng.toFixed(6) + ' • ' + new Date(now).toLocaleTimeString();
+        document.getElementById('telemetry').innerText = 'Speed: ' + (speed? speed.toFixed(2) : '—') + ' m/s · Bearing: ' + (bearing? bearing.toFixed(0) : '—') + '° · Accuracy: ' + (accuracy? accuracy.toFixed(0) : '—') + ' m';
         log('Position: ' + JSON.stringify(payload));
-        // send but avoid overlapping sends
-        if(!sending){ sending = true; sendPoint(payload).finally(()=>sending=false); }
+
+        // send but avoid overlapping sends and filter noisy updates
+        const shouldSend = (() => {
+          if(!lastPos) return true;
+          // ignore if accuracy is very bad
+          if(accuracy && accuracy > 200) return false;
+          const d = haversine({lat: lastPos.lat, lng: lastPos.lng}, {lat, lng});
+          // send if moved more than 5 meters or more than 10 seconds passed
+          if(d > 5) return true;
+          if((now - lastPos.ts) > 10000) return true;
+          return false;
+        })();
+
+        if(shouldSend && !sending){
+          sending = true;
+          sendPoint(payload).finally(()=>sending=false);
+          lastPos = {lat, lng, ts: now};
+
+          // update ETA for driver UI
+          try{
+            const destLat = parseFloat(document.getElementById('destLat').value) || lat;
+            const destLng = parseFloat(document.getElementById('destLng').value) || lng;
+            const fallbackMin = parseFloat(document.getElementById('fallback').value) || 30;
+            const rem = haversine({lat,lng},{lat:destLat,lng:destLng});
+            let etaSeconds = fallbackMin * 60;
+            if(speed && speed > 0.1) etaSeconds = rem / speed;
+            etaSeconds = Math.max(0, Math.min(etaSeconds, fallbackMin * 60));
+            const minutesLeft = Math.ceil(etaSeconds/60);
+            document.getElementById('etaDriver').innerText = 'Arrive ~ ' + new Date(Date.now() + etaSeconds*1000).toLocaleTimeString();
+            document.getElementById('minutesLeftDriver').innerText = minutesLeft + ' min';
+          } catch(e){/* ignore */}
+        }
       }, err => {
         log('Position error: ' + err.message);
         statusEl.innerText = 'Status: error - ' + err.message;

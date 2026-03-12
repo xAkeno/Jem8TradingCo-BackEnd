@@ -15,6 +15,7 @@ use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\TripController;
 
 
 // Public routes
@@ -107,6 +108,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     // Public endpoint for driver/browser to POST location updates without token (demo only)
     Route::post('/public/driver/locations', [LocationController::class, 'storePublic']);
+
+    // Public trip endpoints: create trip (start/dest) and fetch
+    Route::post('/public/trips', [TripController::class, 'store']);
+    Route::get('/public/trips/{trip_id}', [TripController::class, 'show']);
 
     // Addresses
     Route::get('/addresses', [UserAddressController::class, 'index']);
