@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live Tracking Demo</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>body,html{height:100%;margin:0}#map{height:80vh}#log{height:20vh;overflow:auto;padding:8px;font-family:monospace;background:#f7f7f7}</style>
+</head>
+<body>
+  <div style="padding:8px;display:flex;gap:8px;align-items:center;">
+    <label>Trip ID: <input id="trip" value="makati-start" /></label>
+    <button id="connect">Connect</button>
+    <button id="simulate">Simulate POST</button>
+  </div>
+  <div id="map"></div>
+  <div id="log"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.11.0/dist/echo.iife.js"></script>
+
+  <script>
+    const logEl = document.getElementById('log');
+    function log(s){ logEl.innerText = new Date().toISOString() + ' - ' + s + '\n' + logEl.innerText }
+
+    // Simple Leaflet map (starting at H268+6V Makati City ≈ 14.5546, 121.0244)
+    const START_LAT = 14.5546;
+    const START_LNG = 121.0244;
+    const map = L.map('map').setView([START_LAT, START_LNG], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    let marker = null;
+    let poly = L.polyline([], {color: 'blue'}).addTo(map);
+
+    let echo = null;
+
+    document.getElementById('connect').addEventListener('click', () => {
+      const trip = document.getElementById('trip').value.trim();
+      if(!trip) return alert('Enter trip id');
+
+      if(echo) echo.disconnect();
+
+      // Configure Echo (Pusher protocol) to connect to local laravel-echo-server
+      echo = new window.Echo.default({
+        broadcaster: 'pusher',
+        key: 'local',
+        wsHost: window.location.hostname,
+        wsPort: 6001,
+        forceTLS: false,
+        disableStats: true,
+        enabledTransports: ['ws','wss']
+      });
+
+      const channel = echo.channel('trip.' + trip);
+      channel.listen('LocationUpdated', (e) => {
+        log('LocationUpdated received: ' + JSON.stringify(e));
+        const lat = e.lat || e.location?.lat || e.location?.lat;
+        const lng = e.lng || e.location?.lng || e.location?.lng;
+        if(!lat || !lng) return;
+        const latlng = [parseFloat(lat), parseFloat(lng)];
+        poly.addLatLng(latlng);
+        if(!marker) marker = L.marker(latlng).addTo(map);
+        else marker.setLatLng(latlng);
+        map.panTo(latlng);
+      });
+
+      // Load recent points once
+      fetch('/api/public/locations/' + trip + '/recent')
+        .then(r => r.json())
+        .then(json => {
+          log('Loaded recent points: ' + (json.points?.length || 0));
+          if(json.points && json.points.length){
+            const pts = json.points.map(p => [p.lat, p.lng]);
+            poly.setLatLngs(pts);
+            const last = pts[pts.length-1];
+            if(last){
+              if(!marker) marker = L.marker(last).addTo(map);
+              else marker.setLatLng(last);
+              map.fitBounds(poly.getBounds());
+            }
+          }
+        }).catch(err => log('Recent fetch error: ' + err));
+
+      log('Connected to trip.' + trip);
+    });
+
+    // Quick simulate POST: calls backend endpoint to insert a point
+    document.getElementById('simulate').addEventListener('click', () => {
+      const trip = document.getElementById('trip').value.trim();
+      if(!trip) return alert('Enter trip id');
+      // small random deltas for smooth movement (~ up to ~50m)
+      const STEP = 0.0005;
+      const lat = marker ? marker.getLatLng().lat + (Math.random()-0.5)*STEP : START_LAT + (Math.random()-0.5)*STEP;
+      const lng = marker ? marker.getLatLng().lng + (Math.random()-0.5)*STEP : START_LNG + (Math.random()-0.5)*STEP;
+      fetch('/api/locations', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'Accept':'application/json'},
+        body: JSON.stringify({trip_id: trip, user_id: 1, lat: lat, lng: lng})
+      }).then(r=>r.json()).then(j=>log('Posted: '+JSON.stringify(j))).catch(e=>log('Post error: '+e));
+    });
+  </script>
+</body>
+</html>

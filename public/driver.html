@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Driver Tracker (Mobile)</title>
+  <style>body{font-family:sans-serif;padding:12px}button{padding:8px 12px}#status{margin-top:8px}#log{margin-top:8px;font-family:monospace;white-space:pre-wrap}</style>
+</head>
+<body>
+  <h3>Driver Tracking (Mobile Browser)</h3>
+  <label>Trip ID: <input id="trip" value="makati-start" /></label>
+  <button id="start">Start</button>
+  <button id="stop" disabled>Stop</button>
+  <div id="status">Status: idle</div>
+  <div id="log"></div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    function log(s){ logEl.innerText = new Date().toISOString() + ' - ' + s + '\n' + logEl.innerText }
+
+    let watchId = null;
+    let sending = false;
+
+    async function sendPoint(payload){
+      try{
+        const res = await fetch('/api/public/driver/locations', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json','Accept':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const j = await res.json();
+        if(!res.ok) throw new Error(JSON.stringify(j));
+        log('Sent: ' + JSON.stringify(j.location));
+      } catch(e){
+        log('Send error: ' + e);
+      }
+    }
+
+    document.getElementById('start').addEventListener('click', async ()=>{
+      const trip = document.getElementById('trip').value.trim();
+      if(!trip) return alert('Enter trip id');
+
+      if(!('geolocation' in navigator)){
+        alert('Geolocation not supported');
+        return;
+      }
+
+      statusEl.innerText = 'Status: requesting permission';
+      try{
+        // get permission prompt
+        await navigator.permissions.query({name:'geolocation'});
+      } catch(e){}
+
+      statusEl.innerText = 'Status: watching position';
+      // high accuracy; call on each position update
+      watchId = navigator.geolocation.watchPosition(pos => {
+        const payload = {
+          trip_id: trip,
+          user_id: null,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          speed: pos.coords.speed,
+          bearing: pos.coords.heading
+        };
+        log('Position: ' + JSON.stringify(payload));
+        // send but avoid overlapping sends
+        if(!sending){ sending = true; sendPoint(payload).finally(()=>sending=false); }
+      }, err => {
+        log('Position error: ' + err.message);
+        statusEl.innerText = 'Status: error - ' + err.message;
+      }, {enableHighAccuracy: true, maximumAge: 0, timeout: 20000});
+
+      document.getElementById('start').disabled = true;
+      document.getElementById('stop').disabled = false;
+    });
+
+    document.getElementById('stop').addEventListener('click', ()=>{
+      if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+      statusEl.innerText = 'Status: stopped';
+      document.getElementById('start').disabled = false;
+      document.getElementById('stop').disabled = true;
+    });
+
+    // Try using navigator.sendBeacon on unload to send final point
+    window.addEventListener('beforeunload', ()=>{
+      if(navigator.sendBeacon && watchId === null) return;
+      // no-op: could call sendBeacon with last known point if tracked in state
+    });
+  </script>
+</body>
+</html>

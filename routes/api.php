@@ -14,6 +14,7 @@ use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\LocationController;
 
 
 // Public routes
@@ -96,6 +97,16 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     // Checkout
     Route::post('/checkout', [CheckoutController::class, 'store']);
+
+    // Location tracking
+    Route::post('/locations', [LocationController::class, 'store']);
+    Route::get('/locations/{trip_id}/recent', [LocationController::class, 'recent']);
+    
+    // Public route for demo/testing (no auth) to fetch recent points
+    Route::get('/public/locations/{trip_id}/recent', [LocationController::class, 'recent']);
+
+    // Public endpoint for driver/browser to POST location updates without token (demo only)
+    Route::post('/public/driver/locations', [LocationController::class, 'storePublic']);
 
     // Addresses
     Route::get('/addresses', [UserAddressController::class, 'index']);
