@@ -13,6 +13,10 @@
     <button id="connect">Connect</button>
     <button id="simulate">Simulate POST</button>
   </div>
+  <div style="padding:8px;display:flex;gap:8px;align-items:center;">
+    <input id="createAddress" placeholder="Enter destination address (user house)" style="width:420px" />
+    <button id="createTrip">Create Trip (geocode & save)</button>
+  </div>
   <div id="map"></div>
   <div style="padding:8px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; background:#fff">
     <div style="display:flex;gap:8px;align-items:center">
@@ -145,6 +149,38 @@
         });
 
       log('Connected to trip.' + trip);
+    });
+
+    // Create trip by geocoding address and saving to server
+    document.getElementById('createTrip').addEventListener('click', async () => {
+      const trip = document.getElementById('trip').value.trim();
+      const address = document.getElementById('createAddress').value.trim();
+      if(!trip) return alert('Enter trip id');
+      if(!address) return alert('Enter an address');
+
+      log('Geocoding: ' + address);
+      try{
+        const q = encodeURIComponent(address);
+        const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + q, {headers:{'Accept':'application/json'}});
+        const results = await r.json();
+        if(!results || results.length === 0) return alert('Address not found');
+        const place = results[0];
+        const lat = parseFloat(place.lat);
+        const lon = parseFloat(place.lon);
+        // Save trip to server
+        const payload = { trip_id: trip, start_lat: START_LAT, start_lng: START_LNG, dest_lat: lat, dest_lng: lon, dest_address: address };
+        const save = await fetch('/api/public/trips', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        const js = await save.json();
+        if(!save.ok) throw js;
+        log('Trip created: ' + JSON.stringify(js.trip));
+        // update inputs
+        document.getElementById('destLat').value = lat;
+        document.getElementById('destLng').value = lon;
+        alert('Trip saved and destination set');
+      } catch(err){
+        console.error(err);
+        alert('Failed to create trip: ' + (err?.message || err));
+      }
     });
 
     // Quick simulate POST: calls backend endpoint to insert a point
