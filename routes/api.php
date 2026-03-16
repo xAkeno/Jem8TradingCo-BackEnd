@@ -19,6 +19,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\TripController;
 
+use App\Http\Controllers\DeliveryController;
 
 // Public routes
 Route::post('/login', [AccountController::class, 'login']);
@@ -103,6 +104,10 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
 
     //checkout
     Route::get('/checkout', [CheckoutController::class, 'index']);
+
+    Route::get('/deliveries', [DeliveryController::class, 'index']);
+    Route::get('/my-deliveries', [DeliveryController::class, 'indexUser']);
+    Route::patch('/deliveries/{deliveryId}/status', [DeliveryController::class, 'updateStatus']);
     // Cart
     Route::post('/cart/add', [ShopController::class, 'addToCart']);
     Route::delete('/cart/{id}', [ShopController::class, 'deleteFromCart']);
