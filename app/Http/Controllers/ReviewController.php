@@ -170,6 +170,38 @@ class ReviewController extends Controller
         }
     }
 
+    // Reply to a review (admin)
+    public function reply(Request $request, $id)
+    {
+        try {
+
+            $review = Review::findOrFail($id);
+
+            $request->validate([
+                'admin_reply' => 'required|string|max:2000'
+            ]);
+
+            $review->update([
+                'admin_reply' => $request->admin_reply,
+                'replied_at'  => now(),
+            ]);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Reply submitted successfully',
+                'data'    => $review
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+
+        }
+    }
+
 
     // Delete review
     public function destroy($id)

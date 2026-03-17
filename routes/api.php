@@ -45,6 +45,9 @@ Route::get('/findaccount/{id}', [AccountController::class, 'show']);
 // Routes that require authentication
 Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
 
+    Route::post('/reviews/{review}/reply', [ReviewController::class, 'reply']);
+    Route::delete('/reviews/{review}/reply', [ReviewController::class, 'deleteReply']);
+
 
 
     // Account
