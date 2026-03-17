@@ -172,7 +172,7 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
     
     //dashboard admin
     Route::prefix('admin')->group(function(){
-    Route::get('/dashboard',[Dashboard::class, 'index']);
+    Route::get('/dashboard',[Dashboard::class, 'allDashboard']);
     });
     
 });
