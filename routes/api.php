@@ -16,6 +16,10 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\AdminLeadershipController;
+use App\Http\Controllers\Dashboard;
+
+
+
 // Public routes
 Route::post('/login', [AccountController::class, 'login']);
 Route::post('/register', [AccountController::class, 'store']);
@@ -35,7 +39,7 @@ Route::get('/findaccount/{id}', [AccountController::class, 'show']);
 // Routes that require authentication
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
-    // Account  
+    // Account
     Route::get('/me', [AccountController::class, 'me']);
     Route::post('/profile/update', [AccountController::class, 'updateProfile']);
     Route::post('/profile/update-image', [AccountController::class, 'updateProfileImage']);
@@ -129,8 +133,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::put('/addresses/{id}', [UserAddressController::class, 'update']);
     Route::delete('/addresses/{id}', [UserAddressController::class, 'destroy']);
 
+    Route::get('/dashboard', [Dashboard::class, 'allDashboard']);
+
     // Chat
-    
+
 });
 
 // Routes using cookie/session authentication for SPA (Sanctum)
