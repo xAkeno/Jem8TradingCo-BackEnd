@@ -219,6 +219,11 @@ Route::middleware([EnsureTokenIsValid::class]   )->group(function () {
     Route::get('/dashboard',[Dashboard::class, 'allDashboard']);
     });
 
+    //Activity Log
+    // Route::prefix('admin')->group(function(){
+    //     Route::get
+    // });
+
 });
 
 
