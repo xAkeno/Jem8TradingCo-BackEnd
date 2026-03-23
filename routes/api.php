@@ -137,6 +137,11 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     // Chat
 
+    //Activity Log
+    // Route::prefix('admin')->group(function(){
+    //     Route::get
+    // });
+
 });
 
 // Chat routes (public)
