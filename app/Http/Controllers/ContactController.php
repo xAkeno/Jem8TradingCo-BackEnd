@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ContactController extends Controller
 {
-    // Create a new contact message (public)
+    // ✅ POST - Create contact message (public)
     public function store(Request $request)
     {
         try {
@@ -32,6 +32,7 @@ class ContactController extends Controller
                 'status'       => 'pending',
             ]);
 
+            // ✅ Log: only if logged in
             if (Auth::check()) {
                 ActivityLog::log(Auth::user(), 'Sent a contact message', 'contacts', [
                     'description'     => Auth::user()->first_name . ' sent a contact message',
@@ -40,71 +41,53 @@ class ContactController extends Controller
                 ]);
             }
 
-            return response()->json([
-                'status' => 'success',
-                'data'   => $contact,
-            ], 201);
+            return response()->json(['status' => 'success', 'data' => $contact], 201);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
-    // Get all contact messages (admin)
+    // ✅ GET - All contacts (admin)
     public function index()
     {
         try {
             $contacts = Contact::orderBy('created_at', 'desc')->get();
-                
 
-             ActivityLog::log(Auth::user(), 'Viewed contacts list', 'contacts', [
+            // ✅ Log: admin viewed contacts list
+            ActivityLog::log(Auth::user(), 'Viewed contacts list', 'contacts', [
                 'description'     => Auth::user()->first_name . ' viewed the contacts list',
                 'reference_table' => 'contacts',
             ]);
 
-            return response()->json([
-                'status' => 'success',
-                'data'   => $contacts,
-            ], 200);
+            return response()->json(['status' => 'success', 'data' => $contacts], 200);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
-    // Get single contact message (admin)
+    // ✅ GET - Single contact (admin)
     public function show($id)
     {
         try {
             $contact = Contact::findOrFail($id);
 
+            // ✅ Log: admin viewed a contact
             ActivityLog::log(Auth::user(), 'Viewed a contact message', 'contacts', [
                 'description'     => Auth::user()->first_name . ' viewed contact message from: ' . $contact->first_name . ' ' . $contact->last_name,
                 'reference_table' => 'contacts',
                 'reference_id'    => $id,
             ]);
 
-            return response()->json([
-                'status' => 'success',
-                'data'   => $contact,
-            ], 200);
+            return response()->json(['status' => 'success', 'data' => $contact], 200);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
-    // Update status of contact message (admin)
-    // status: pending | read | replied
+    // PATCH - Update status (admin) — no log needed
     public function updateStatus(Request $request, $id)
     {
         try {
@@ -115,77 +98,62 @@ class ContactController extends Controller
             $contact = Contact::findOrFail($id);
             $contact->update(['status' => $request->input('status')]);
 
-            return response()->json([
-                'status' => 'success',
-                'data'   => $contact,
-            ], 200);
+            return response()->json(['status' => 'success', 'data' => $contact], 200);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
-    // Delete contact message (admin)
+    // ✅ DELETE - Delete contact (admin)
     public function destroy($id)
     {
         try {
             $contact = Contact::findOrFail($id);
-            $name = $contact->first_name . ' ' . $contact->last_name;
+            $name    = $contact->first_name . ' ' . $contact->last_name;
             $contact->delete();
 
-
+            // ✅ Log: admin deleted a contact
             ActivityLog::log(Auth::user(), 'Deleted a contact message', 'contacts', [
                 'description'     => Auth::user()->first_name . ' deleted contact message from: ' . $name,
                 'reference_table' => 'contacts',
                 'reference_id'    => $id,
             ]);
 
+            return response()->json(['status' => 'success', 'message' => 'Contact message deleted successfully.'], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // POST - Reply to contact (admin) — no log needed
+    public function reply(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'reply_message' => 'required|string|max:2000',
+            ]);
+
+            $contact = Contact::findOrFail($id);
+
+            Mail::to($contact->email)->send(
+                new ContactReply(
+                    $contact->first_name . ' ' . $contact->last_name,
+                    $request->input('reply_message')
+                )
+            );
+
+            $contact->update(['status' => 'replied']);
+
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Contact message deleted successfully.',
+                'message' => 'Reply sent successfully to ' . $contact->email,
+                'data'    => $contact,
             ], 200);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
-    public function reply(Request $request, $id)
-{
-    try {
-        $request->validate([
-            'reply_message' => 'required|string|max:2000',
-        ]);
-
-        $contact = Contact::findOrFail($id);
-
-        // Send email
-        Mail::to($contact->email)->send(
-            new ContactReply(
-                $contact->first_name . ' ' . $contact->last_name,
-                $request->input('reply_message')
-            )
-        );
-
-        // Auto update status to replied
-        $contact->update(['status' => 'replied']);
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Reply sent successfully to ' . $contact->email,
-            'data'    => $contact,
-        ], 200);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-}
 }

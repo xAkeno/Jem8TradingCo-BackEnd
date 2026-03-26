@@ -143,7 +143,7 @@ Route::delete('/accounts/{id}', [AccountController::class, 'adminDestroy']);
     Route::post('activity-logs',                 [ActivityLogController::class, 'storeLogs']);
     Route::get('activity-logs/{activityLog}',    [ActivityLogController::class, 'showLogs']);
     Route::put('activity-logs/{activityLog}',    [ActivityLogController::class, 'updateLogs']);
-    Route::delete('activity-logs',               [ActivityLogController::class, 'destroyAllLogs']);
+    Route::delete('activity-logs',               [ActivityLogController::class, 'delallLogs']);
     Route::delete('activity-logs/{activityLog}', [ActivityLogController::class, 'destroyLogs']);
     });
 
