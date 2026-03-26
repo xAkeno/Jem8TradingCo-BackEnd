@@ -26,11 +26,11 @@ return new class extends Migration
                       ->onDelete('cascade');
             });
         }
-        Schema::enableForeignKeyConstraints();
+        
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('blog');
+        Schema::dropIfExists('blog_imgs');
     }
 };
