@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Contact;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ContactReply;
+use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
+
 class ContactController extends Controller
 {
     // Create a new contact message (public)
@@ -29,6 +32,14 @@ class ContactController extends Controller
                 'status'       => 'pending',
             ]);
 
+            if (Auth::check()) {
+                ActivityLog::log(Auth::user(), 'Sent a contact message', 'contacts', [
+                    'description'     => Auth::user()->first_name . ' sent a contact message',
+                    'reference_table' => 'contacts',
+                    'reference_id'    => $contact->message_id,
+                ]);
+            }
+
             return response()->json([
                 'status' => 'success',
                 'data'   => $contact,
@@ -47,6 +58,12 @@ class ContactController extends Controller
     {
         try {
             $contacts = Contact::orderBy('created_at', 'desc')->get();
+                
+
+             ActivityLog::log(Auth::user(), 'Viewed contacts list', 'contacts', [
+                'description'     => Auth::user()->first_name . ' viewed the contacts list',
+                'reference_table' => 'contacts',
+            ]);
 
             return response()->json([
                 'status' => 'success',
@@ -66,6 +83,12 @@ class ContactController extends Controller
     {
         try {
             $contact = Contact::findOrFail($id);
+
+            ActivityLog::log(Auth::user(), 'Viewed a contact message', 'contacts', [
+                'description'     => Auth::user()->first_name . ' viewed contact message from: ' . $contact->first_name . ' ' . $contact->last_name,
+                'reference_table' => 'contacts',
+                'reference_id'    => $id,
+            ]);
 
             return response()->json([
                 'status' => 'success',
@@ -110,7 +133,15 @@ class ContactController extends Controller
     {
         try {
             $contact = Contact::findOrFail($id);
+            $name = $contact->first_name . ' ' . $contact->last_name;
             $contact->delete();
+
+
+            ActivityLog::log(Auth::user(), 'Deleted a contact message', 'contacts', [
+                'description'     => Auth::user()->first_name . ' deleted contact message from: ' . $name,
+                'reference_table' => 'contacts',
+                'reference_id'    => $id,
+            ]);
 
             return response()->json([
                 'status'  => 'success',
