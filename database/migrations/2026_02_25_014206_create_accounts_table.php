@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('phone_number')->unique();
             $table->string('email')->unique();
             $table->string('password');
+            $table->enum('role', ['admin', 'user'])->default('user');
             $table->string('profile_image')->nullable();
             $table->string('email_verification_code')->nullable();
             $table->timestamp('email_verification_expires_at')->nullable();
@@ -39,6 +40,7 @@ return new class extends Migration
                 'phone_number' => '09000000001',
                 'email' => 'admin@example.com',
                 'password' => Hash::make('password123'),
+                 'role' => 'admin',
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -49,6 +51,7 @@ return new class extends Migration
                 'phone_number' => '09000000002',
                 'email' => 'user@example.com',
                 'password' => Hash::make('password123'),
+                'role' => 'user',
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
