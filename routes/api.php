@@ -18,7 +18,7 @@ use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\AdminLeadershipController;
 use App\Http\Controllers\Dashboard;
 use App\Http\Controllers\ActivityLogController;
-
+use App\Http\Controllers\AdminBackupController;
 
 // Public routes
 Route::post('/login', [AccountController::class, 'login']);
@@ -122,6 +122,12 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     // Route::delete('/cart/{cart}', [CartController::class, 'destroy']);
     // Route::delete('/cart/product/{product}', [CartController::class, 'destroyByProduct']);
     // Route::post('/cart/clear', [CartController::class, 'clear']);
+     // Backup Recovery
+    Route::post('/admin/backups/run',              [AdminBackupController::class, 'adminRunBackup']);
+    Route::post('/admin/backups/restore',          [AdminBackupController::class, 'adminUploadRestore']);
+    Route::get('/admin/backups',                   [AdminBackupController::class, 'adminHistoryBackup']);
+    Route::get('/admin/backups/{id}/download',     [AdminBackupController::class, 'adminDownloadBackup']);
+    Route::delete('/admin/backups/{id}',           [AdminBackupController::class, 'adminDeleteBackup']);
 
     // Checkout
     Route::post('/checkout', [CheckoutController::class, 'store']);
