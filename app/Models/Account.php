@@ -57,6 +57,9 @@ class Account extends Authenticatable
         'email',
         'password',
         'role',                          // ← ADDED: allows role to be mass-assigned
+        'company_name',
+        'position',
+        'business_type',
         'email_verification_code',
         'email_verification_expires_at',
         'password_reset_code',
