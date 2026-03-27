@@ -250,6 +250,9 @@ class AccountController extends Controller
                 'first_name'        => $user->first_name,
                 'last_name'         => $user->last_name,
                 'phone_number'      => $user->phone_number,
+                'company_name'      => $user->company_name ?? null,
+                'position'          => $user->position ?? null,
+                'business_type'     => $user->business_type ?? null,
                 'email'             => $user->email,
                 'role'              => $user->role,
                 'profile_image'     => $user->profile_image ? asset('storage/' . $user->profile_image) : null,
@@ -271,6 +274,9 @@ class AccountController extends Controller
             'last_name'    => 'sometimes|string|max:255',
             'phone_number' => 'sometimes|string|unique:accounts,phone_number,' . $user->id,
             'email'        => 'sometimes|email|unique:accounts,email,' . $user->id,
+            'company_name' => 'sometimes|nullable|string|max:255',
+            'position'     => 'sometimes|nullable|string|max:255',
+            'business_type'=> 'sometimes|nullable|string|max:255',
         ]);
 
         $user->update($validated);
