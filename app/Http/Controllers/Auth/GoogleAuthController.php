@@ -44,6 +44,7 @@ class GoogleAuthController extends Controller
         'profile_image'     => $googleUser->getAvatar(),
         'email_verified_at' => now(),
         'password'          => null,
+        'phone_number'      => null,
         ]);
     } else {
         $account->update([
