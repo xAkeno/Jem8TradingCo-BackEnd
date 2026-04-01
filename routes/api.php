@@ -31,6 +31,8 @@ Route::post('/reset-password', [AccountController::class, 'resetPassword']);
 Route::get('/products/{id}', [ShopController::class, 'showProduct']);
 
 // Reviews (public)
+Route::get('/reviews/latest', [ReviewController::class, 'getLatestReviews']);
+Route::get('/reviews/{review}', [ReviewController::class, 'show']);
 Route::get('/reviews', [ReviewController::class, 'all']);
 Route::get('/reviews/{review}', [ReviewController::class, 'show']);
 Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
