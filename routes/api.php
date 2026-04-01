@@ -20,6 +20,7 @@ use App\Http\Controllers\Dashboard;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminsettingsController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 // Public routes
 Route::post('/login', [AccountController::class, 'login']);
 Route::post('/register', [AccountController::class, 'store']);
@@ -186,5 +187,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     Route::put('/accounts/{id}', [AccountController::class, 'update']);
 
-
 });
+
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
