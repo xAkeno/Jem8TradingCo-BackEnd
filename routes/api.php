@@ -39,6 +39,8 @@ Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store']);
 Route::get('/findaccount/{id}', [AccountController::class, 'show']);
+Route::get('/admin-leadership', [AdminLeadershipController::class, 'adminImgIndex']);
+
 // Routes that require authentication
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
@@ -81,7 +83,6 @@ Route::delete('/accounts/{id}', [AccountController::class, 'adminDestroy']);
     Route::get('/showAllUser', [AccountController::class, 'index']);
     Route::get('/showUser/{id}', [AccountController::class, 'show']);
 
-    Route::get('/admin-leadership', [AdminLeadershipController::class, 'adminImgIndex']);
 
     // CREATE leadership
     Route::post('/admin-leadership', [AdminLeadershipController::class, 'adminImgStore']);

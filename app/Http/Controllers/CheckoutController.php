@@ -1,10 +1,13 @@
 <?php
 
+
 // ============================================================
 // CheckoutController.php
 // ============================================================
 
+
 namespace App\Http\Controllers;
+
 
 use App\Models\Cart;
 use App\Models\Checkout;
@@ -15,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Delivery;
 
+
 class CheckoutController extends Controller
 {
     public function index(Request $request)
@@ -23,6 +27,7 @@ class CheckoutController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
+
 
         $orders = Checkout::with(['cart.product', 'delivery'])
             ->where('user_id', $user->id)
@@ -34,8 +39,10 @@ class CheckoutController extends Controller
             'reference_table' => 'checkouts',
         ]);
 
+
         return response()->json($orders);
     }
+
 
     public function store(Request $request)
     {
