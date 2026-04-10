@@ -203,42 +203,54 @@ private function orders(): array
         });
     }
 
-        private function traffic(): array{
-        return Cache::remember('dashboard.traffic', now()->addMinutes(15), function () {
-            return [
-                // users by address
-                'users_by_address'   => UserAddress::selectRaw('address, COUNT(*) as total')
-                                            ->groupBy('address')
-                                            ->orderByDesc('total')
-                                            ->take(10)
-                                            ->pluck('total', 'address'),
+        private function traffic(): array {
+    return Cache::remember('dashboard.traffic', now()->addMinutes(15), function () {
+        return [
+            // users by address (pwede panatilihin, galing sa user_addresses)
+            'users_by_address'   => UserAddress::selectRaw('city, COUNT(*) as total')
+                                        ->whereNotNull('city')
+                                        ->where('city', '!=', '')
+                                        ->groupBy('city')
+                                        ->orderByDesc('total')
+                                        ->take(10)
+                                        ->pluck('total', 'city'),
 
-                // orders by address (join with checkouts)
-                'orders_by_address'  => UserAddress::selectRaw('user_addresses.address, COUNT(checkouts.checkout_id) as total')
-                                            ->join('checkouts', 'checkouts.user_id', '=', 'user_addresses.user_id')
-                                            ->groupBy('user_addresses.address')
-                                            ->orderByDesc('total')
-                                            ->take(10)
-                                            ->pluck('total', 'address'),
+            // orders by city (galing na sa checkouts.delivery_address)
+            'orders_by_address'  => DB::table('checkouts')
+                                        ->selectRaw("
+                                            JSON_UNQUOTE(JSON_EXTRACT(delivery_address, '$.city')) as city,
+                                            COUNT(*) as total
+                                        ")
+                                        ->whereRaw("JSON_EXTRACT(delivery_address, '$.city') IS NOT NULL")
+                                        ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(delivery_address, '$.city')) != ''")
+                                        ->groupByRaw("JSON_UNQUOTE(JSON_EXTRACT(delivery_address, '$.city'))")
+                                        ->orderByDesc('total')
+                                        ->take(10)
+                                        ->pluck('total', 'city'),
 
-                // revenue by address
-                'revenue_by_address' => UserAddress::selectRaw('user_addresses.address, SUM(checkouts.paid_amount) as revenue')
-                                            ->join('checkouts', 'checkouts.user_id', '=', 'user_addresses.user_id')
-                                            ->groupBy('user_addresses.address')
-                                            ->orderByDesc('revenue')
-                                            ->take(10)
-                                            ->pluck('revenue', 'address'),
+            // ── PANGUNAHING BINAGO — revenue by city galing sa checkouts ──
+            'revenue_by_address' => DB::table('checkouts')
+                                        ->selectRaw("
+                                            JSON_UNQUOTE(JSON_EXTRACT(delivery_address, '$.city')) as city,
+                                            SUM(paid_amount) as revenue
+                                        ")
+                                        ->whereRaw("JSON_EXTRACT(delivery_address, '$.city') IS NOT NULL")
+                                        ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(delivery_address, '$.city')) != ''")
+                                        ->groupByRaw("JSON_UNQUOTE(JSON_EXTRACT(delivery_address, '$.city'))")
+                                        ->orderByDesc('revenue')
+                                        ->take(10)
+                                        ->pluck('revenue', 'city'),
 
-                // users by company
-                'by_company'         => UserAddress::selectRaw('company_name, COUNT(*) as total')
-                                            ->whereNotNull('company_name')
-                                            ->groupBy('company_name')
-                                            ->orderByDesc('total')
-                                            ->take(10)
-                                            ->pluck('total', 'company_name'),
-            ];
-        });
-    }
+            // users by company (unchanged)
+            'by_company'         => UserAddress::selectRaw('company_name, COUNT(*) as total')
+                                        ->whereNotNull('company_name')
+                                        ->groupBy('company_name')
+                                        ->orderByDesc('total')
+                                        ->take(10)
+                                        ->pluck('total', 'company_name'),
+        ];
+    });
+}
         private function contacts(): array
     {
         return Cache::remember('dashboard.contacts', now()->addMinutes(5), function () {

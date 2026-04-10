@@ -19,9 +19,9 @@ class DeliveryController extends Controller
     public function index(Request $request)
     {
         $query = Delivery::with([
-            'checkout.user',
-            'checkout.cart.product',
-        ]);
+        'checkout.user',
+        'checkout.cart.product',
+    ]);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
