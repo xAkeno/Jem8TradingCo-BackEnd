@@ -18,14 +18,16 @@ class DeliveryController extends Controller
     // Admin list of all deliveries
     public function index(Request $request)
     {
-        $query = Delivery::with(['checkout.user', 'checkout.cart.product.images']);
+        $query = Delivery::with([
+            'checkout.user',
+            'checkout.cart.product',
+        ]);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
         $deliveries = $query->get();
-
 
         ActivityLog::log(Auth::user(), 'Viewed deliveries list', 'orders', [
             'description'     => Auth::user()->first_name . ' viewed the deliveries list',
@@ -47,20 +49,51 @@ class DeliveryController extends Controller
             ->where('id', $user->id)
             ->first();
 
-        $checkouts = Checkout::select('checkout_id', 'user_id', 'cart_id', 'discount_id', 'payment_method', 'payment_details', 'shipping_fee', 'paid_amount', 'paid_at', 'special_instructions', 'created_at')
+        // ✅ Eager-load cart and product in one query instead of N+1 loops
+        $checkouts = Checkout::with(['cart.product'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $orders = [];
-        foreach ($checkouts as $checkout) {
+        $orders = $checkouts->map(function ($checkout) {
             $delivery = Delivery::where('checkout_id', $checkout->checkout_id)
                 ->select('delivery_id', 'checkout_id', 'status', 'driver_id', 'notes', 'created_at')
                 ->first();
 
-            $orders[] = ['checkout' => $checkout, 'delivery' => $delivery];
-        }
+            return [
+                'checkout' => [
+                    'checkout_id'          => $checkout->checkout_id,
+                    'user_id'              => $checkout->user_id,
+                    'cart_id'              => $checkout->cart_id,
+                    'discount_id'          => $checkout->discount_id,
+                    'payment_method'       => $checkout->payment_method,
+                    'payment_details'      => $checkout->payment_details,
+                    'shipping_fee'         => $checkout->shipping_fee,
+                    'paid_amount'          => $checkout->paid_amount,
+                    'paid_at'              => $checkout->paid_at,
+                    'special_instructions' => $checkout->special_instructions,
+                    'created_at'           => $checkout->created_at,
 
+                    'cart' => $checkout->cart ? [
+                        'cart_id'     => $checkout->cart->cart_id,
+                        'quantity'    => $checkout->cart->quantity,
+                        'total'       => $checkout->cart->total,
+                        'status'      => $checkout->cart->status,
+                        'is_checkout' => $checkout->cart->is_checkout,
+                        'product'     => $checkout->cart->product ? [
+                            'product_id'        => $checkout->cart->product->product_id,
+                            'product_name'      => $checkout->cart->product->product_name,
+                            'price'             => $checkout->cart->product->price,
+                            'status'            => $checkout->cart->product->status,
+                            'product_stocks'    => $checkout->cart->product->product_stocks,
+                            'primary_image_url' => $checkout->cart->product->primary_image_url,
+                            'images'            => $checkout->cart->product->images ?? [],
+                        ] : null,
+                    ] : null,
+                ],
+                'delivery' => $delivery,
+            ];
+        });
 
         ActivityLog::log($user, 'Viewed delivery status', 'orders', [
             'description'     => $user->first_name . ' checked their delivery status',
@@ -85,7 +118,6 @@ class DeliveryController extends Controller
         $oldStatus        = $delivery->status;
         $delivery->status = $request->input('status');
         $delivery->save();
-
 
         ActivityLog::log(Auth::user(), 'Updated delivery status', 'orders', [
             'description'     => Auth::user()->first_name . ' updated delivery #' . $deliveryId . ' from ' . $oldStatus . ' to ' . $delivery->status,
