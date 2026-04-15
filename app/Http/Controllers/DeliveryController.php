@@ -45,9 +45,18 @@ class DeliveryController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $account = Account::select('id', 'first_name', 'last_name', 'phone_number', 'email', 'profile_image')
-            ->where('id', $user->id)
-            ->first();
+        $account = Account::select(
+        'id',
+        'first_name',
+        'last_name',
+        'phone_number',
+        'email',
+        'profile_image',
+        'company_name',
+        'tin_number'
+    )
+    ->where('id', $user->id)
+    ->first();
 
         // ✅ Eager-load cart and product in one query instead of N+1 loops
         $checkouts = Checkout::with(['cart.product'])
@@ -101,8 +110,18 @@ class DeliveryController extends Controller
             'reference_table' => 'deliveries',
         ]);
 
-        return response()->json(['account' => $account, 'orders' => $orders], 200);
-    }
+        return response()->json([
+        'account' => [
+            'first_name'   => $account->first_name,
+            'last_name'    => $account->last_name,
+            'phone_number' => $account->phone_number,
+            'email'        => $account->email,
+            'company_name' => $account->company_name ?? null,
+            'tin_number'   => $account->tin_number   ?? null,
+        ],
+        'orders' => $orders
+    ], 200);
+        }
 
     // Update delivery status
     public function updateStatus(Request $request, $deliveryId)
