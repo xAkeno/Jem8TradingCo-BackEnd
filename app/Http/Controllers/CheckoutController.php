@@ -58,6 +58,7 @@ class CheckoutController extends Controller
             'payment_details'      => 'nullable|array',
             'shipping_fee'         => 'sometimes|numeric|min:0',
             'special_instructions' => 'sometimes|nullable|string|max:2000',
+            'receipt_image'        => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $cartIds = $request->input('cart_ids');
@@ -155,6 +156,13 @@ class CheckoutController extends Controller
         $paidAmount = $grandTotal + $shippingFee;
         $paidAt     = in_array($method, ['gcash', 'maya']) ? now() : null;
 
+        $receiptImagePath = null;
+
+        if ($request->hasFile('receipt_image')) {
+            $receiptImagePath = $request->file('receipt_image')
+                ->store('receipts', 'public');
+        }
+
         DB::beginTransaction();
         try {
             // ── Generate a unique receipt number ──────────────────────────
@@ -188,6 +196,7 @@ class CheckoutController extends Controller
                     'checkout_id'       => $checkout->checkout_id,
                     'receipt_number'    => $receiptNumber,
                     'payment_method'    => $method,
+                    'receipt_image'     => $receiptImagePath,
                     'payment_reference' => $paymentReference,
                     'paid_amount'       => $paidAmount,
                     'paid_at'           => $paidAt,
@@ -238,7 +247,13 @@ class CheckoutController extends Controller
                 'shipping_fee' => number_format($shippingFee, 2, '.', ''),
                 'receipt_id'   => $receiptId,
                 'receipt_number' => $receiptNumber,
-                'items'        => $cartItems->map(fn($i) => [
+
+                // ✅ ADD THIS
+                'receipt_image_url' => $receiptImagePath 
+                    ? asset('storage/' . $receiptImagePath)
+                    : null,
+
+                'items' => $cartItems->map(fn($i) => [
                     'cart_id'    => $i->cart_id,
                     'product_id' => $i->product_id,
                     'quantity'   => $i->quantity,
