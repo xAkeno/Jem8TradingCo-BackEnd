@@ -20,14 +20,23 @@ class DeliveryController extends Controller
     {
         $query = Delivery::with([
             'checkout.user',
-            'checkout.cart.product',  // ✅ load full cart + product
+            'checkout.cart.product',
+            'checkout.receipt', // ✅ ADD THIS
         ]);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        $deliveries = $query->get();
+        $deliveries = $query->get()->map(function ($delivery) {
+            $receipt = $delivery->checkout->receipt ?? null;
+
+            $delivery->receipt_image_url = $receipt && $receipt->receipt_image
+                ? asset('storage/' . $receipt->receipt_image)
+                : null;
+
+            return $delivery;
+        });
 
         ActivityLog::log(Auth::user(), 'Viewed deliveries list', 'orders', [
             'description'     => Auth::user()->first_name . ' viewed the deliveries list',
@@ -50,50 +59,60 @@ class DeliveryController extends Controller
             ->first();
 
         // ✅ Eager-load cart and product in one query instead of N+1 loops
-        $checkouts = Checkout::with(['cart.product'])
+        $checkouts = Checkout::with(['cart.product', 'receipt'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
         $orders = $checkouts->map(function ($checkout) {
-            $delivery = Delivery::where('checkout_id', $checkout->checkout_id)
-                ->select('delivery_id', 'checkout_id', 'status', 'driver_id', 'notes', 'created_at')
-                ->first();
+        $delivery = Delivery::where('checkout_id', $checkout->checkout_id)
+            ->select('delivery_id', 'checkout_id', 'status', 'driver_id', 'notes', 'created_at')
+            ->first();
 
-            return [
-                'checkout' => [
-                    'checkout_id'          => $checkout->checkout_id,
-                    'user_id'              => $checkout->user_id,
-                    'cart_id'              => $checkout->cart_id,
-                    'discount_id'          => $checkout->discount_id,
-                    'payment_method'       => $checkout->payment_method,
-                    'payment_details'      => $checkout->payment_details,
-                    'shipping_fee'         => $checkout->shipping_fee,
-                    'paid_amount'          => $checkout->paid_amount,
-                    'paid_at'              => $checkout->paid_at,
-                    'special_instructions' => $checkout->special_instructions,
-                    'created_at'           => $checkout->created_at,
+        $receipt = $checkout->receipt;
 
-                    // ✅ Full cart data with product
-                    'cart' => $checkout->cart ? [
-                        'cart_id'     => $checkout->cart->cart_id,
-                        'quantity'    => $checkout->cart->quantity,
-                        'total'       => $checkout->cart->total,
-                        'status'      => $checkout->cart->status,
-                        'is_checkout' => $checkout->cart->is_checkout,
-                        'product'     => $checkout->cart->product ? [
-                            'product_id'        => $checkout->cart->product->product_id,
-                            'product_name'      => $checkout->cart->product->product_name,
-                            'price'             => $checkout->cart->product->price,
-                            'product_stocks'    => $checkout->cart->product->product_stocks,
-                            'primary_image_url' => $checkout->cart->product->primary_image_url,
-                            'images'            => $checkout->cart->product->images ?? [],
-                        ] : null,
+        return [
+            'checkout' => [
+                'checkout_id'          => $checkout->checkout_id,
+                'user_id'              => $checkout->user_id,
+                'cart_id'              => $checkout->cart_id,
+                'discount_id'          => $checkout->discount_id,
+                'payment_method'       => $checkout->payment_method,
+                'payment_details'      => $checkout->payment_details,
+                'shipping_fee'         => $checkout->shipping_fee,
+                'paid_amount'          => $checkout->paid_amount,
+                'paid_at'              => $checkout->paid_at,
+                'special_instructions' => $checkout->special_instructions,
+                'created_at'           => $checkout->created_at,
+
+                // ✅ ADD RECEIPT HERE
+                'receipt' => $receipt ? [
+                    'receipt_id' => $receipt->receipt_id,
+                    'receipt_number' => $receipt->receipt_number,
+                    'receipt_image_url' => $receipt->receipt_image
+                        ? asset('storage/' . $receipt->receipt_image)
+                        : null,
+                ] : null,
+
+                'cart' => $checkout->cart ? [
+                    'cart_id'     => $checkout->cart->cart_id,
+                    'quantity'    => $checkout->cart->quantity,
+                    'total'       => $checkout->cart->total,
+                    'status'      => $checkout->cart->status,
+                    'is_checkout' => $checkout->cart->is_checkout,
+                    'product'     => $checkout->cart->product ? [
+                        'product_id'        => $checkout->cart->product->product_id,
+                        'product_name'      => $checkout->cart->product->product_name,
+                        'price'             => $checkout->cart->product->price,
+                        'product_stocks'    => $checkout->cart->product->product_stocks,
+                        'primary_image_url' => $checkout->cart->product->primary_image_url,
+                        'images'            => $checkout->cart->product->images ?? [],
                     ] : null,
-                ],
-                'delivery' => $delivery,
-            ];
-        });
+                ] : null,
+            ],
+            'delivery' => $delivery,
+        ];
+    });
 
         ActivityLog::log($user, 'Viewed delivery status', 'orders', [
             'description'     => $user->first_name . ' checked their delivery status',

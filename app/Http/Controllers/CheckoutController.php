@@ -28,17 +28,22 @@ class CheckoutController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-
-        $orders = Checkout::with(['cart.product', 'delivery'])
+        $orders = Checkout::with(['cart.product', 'delivery', 'receipt'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($order) {
+                $order->receipt_image_url = $order->receipt && $order->receipt->receipt_image
+                    ? asset('storage/' . $order->receipt->receipt_image)
+                    : null;
+
+                return $order;
+            });
 
         ActivityLog::log($user, 'Viewed orders', 'orders', [
             'description'     => $user->first_name . ' viewed their orders list',
             'reference_table' => 'checkouts',
         ]);
-
 
         return response()->json($orders);
     }
@@ -91,6 +96,7 @@ class CheckoutController extends Controller
                 $request->validate([
                     'payment_details.mobile_number' => 'required|string',
                     'payment_details.account_name'  => 'required|string',
+                        
                 ]);
                 $paymentDetails = [
                     'mobile_number' => $details['mobile_number'],

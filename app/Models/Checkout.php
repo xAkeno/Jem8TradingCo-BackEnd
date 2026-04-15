@@ -49,4 +49,8 @@ class Checkout extends Model
     {
         return $this->hasOne(Delivery::class, 'checkout_id');
     }
+    public function receipt()
+    {
+        return $this->hasOne(\App\Models\Receipt::class, 'checkout_id', 'checkout_id');
+    }
 }
