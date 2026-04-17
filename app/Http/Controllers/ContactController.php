@@ -137,19 +137,43 @@ class ContactController extends Controller
 
             $contact = Contact::findOrFail($id);
 
-            Mail::to($contact->email)->send(
-                new ContactReply(
-                    $contact->first_name . ' ' . $contact->last_name,
-                    $request->input('reply_message')
-                )
-            );
+            $replyText = $request->input('reply_message');
 
-            $contact->update(['status' => 'replied']);
+            // Queue the reply email
+            try {
+                Mail::to($contact->email)->queue(
+                    new ContactReply(
+                        $contact->first_name . ' ' . $contact->last_name,
+                        $replyText
+                    )
+                );
+            } catch (\Exception $e) {
+                // If queue/send fails, log but continue to save reply state
+                \Illuminate\Support\Facades\Log::error('Failed to queue contact reply email', [
+                    'error' => $e->getMessage(),
+                    'contact_id' => $contact->getKey(),
+                ]);
+            }
+
+            // Save reply details and mark replied
+            $contact->update([
+                'reply_message' => $replyText,
+                'replied_by'    => optional(Auth::user())->id,
+                'replied_at'    => now(),
+                'status'        => 'replied',
+            ]);
+
+            // Log admin reply
+            ActivityLog::log(Auth::user(), 'Replied to contact message', 'contacts', [
+                'description'     => Auth::user()->first_name . ' replied to contact message from: ' . $contact->first_name . ' ' . $contact->last_name,
+                'reference_table' => 'contacts',
+                'reference_id'    => $contact->getKey(),
+            ]);
 
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Reply sent successfully to ' . $contact->email,
-                'data'    => $contact,
+                'message' => 'Reply queued and saved for ' . $contact->email,
+                'data'    => $contact->fresh(),
             ], 200);
 
         } catch (\Exception $e) {
