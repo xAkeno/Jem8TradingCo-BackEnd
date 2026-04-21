@@ -104,6 +104,23 @@ class CheckoutController extends Controller
                 $paymentDetails = $details;
                 break;
 
+            case 'check':
+            case 'check_payment':
+                $request->validate([
+                    'payment_details.bank_name'    => 'required|string',
+                    'payment_details.check_number' => 'required|string',
+                    'payment_details.check_date'   => 'required|date',
+                    'payment_details.check_amount' => 'required|numeric',
+                ]);
+
+                $paymentDetails = [
+                    'bank_name'    => $details['bank_name'] ?? null,
+                    'check_number' => $details['check_number'] ?? null,
+                    'check_date'   => $details['check_date'] ?? null,
+                    'check_amount' => $details['check_amount'] ?? null,
+                ];
+                break;
+
             case 'cod':
                 $paymentDetails = ['type' => 'cash_on_delivery'];
                 break;
