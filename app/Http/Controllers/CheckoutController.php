@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Delivery;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Cache;
 
 class CheckoutController extends Controller
@@ -81,6 +82,12 @@ class CheckoutController extends Controller
         $shippingFee = (float) $request->input('shipping_fee', 0);
         $deliveryAddress = $details['billing_address'] ?? null;
 
+        // Normalize payment method so DB enums match (e.g. 'deposit' => 'bank_transfer')
+        $normalizedMethod = $method;
+        if (in_array($method, ['deposit', 'deposit_payment'], true)) {
+            $normalizedMethod = 'bank_transfer';
+        }
+
         // ✅ PAYMENT VALIDATION
         switch ($method) {
             case 'gcash':
@@ -102,6 +109,23 @@ class CheckoutController extends Controller
                     'payment_details.account_number' => 'required|string',
                 ]);
                 $paymentDetails = $details;
+                break;
+
+            case 'deposit':
+            case 'deposit_payment':
+                $request->validate([
+                    'payment_details.bank_name'      => 'required|string',
+                    'payment_details.account_name'   => 'required|string',
+                    'payment_details.account_number' => 'required_without:payment_details.reference_number|string',
+                    'payment_details.reference_number' => 'required_without:payment_details.account_number|string',
+                ]);
+
+                $paymentDetails = [
+                    'bank_name'       => $details['bank_name'] ?? null,
+                    'account_name'    => $details['account_name'] ?? null,
+                    'account_number'  => $details['account_number'] ?? null,
+                    'reference_number'=> $details['reference_number'] ?? null,
+                ];
                 break;
 
             case 'check':
@@ -199,16 +223,22 @@ class CheckoutController extends Controller
         try {
 
             // ✅ CREATE ONE CHECKOUT ONLY
-            $checkout = Checkout::create([
+            $checkoutData = [
                 'user_id'              => $user->id,
-                'payment_method'       => $method,
-                'payment_details'      => $paymentDetails,
+                'payment_method'       => $normalizedMethod,
                 'delivery_address'     => $deliveryAddress,
                 'shipping_fee'         => $shippingFee,
                 'paid_amount'          => $paidAmount,
                 'paid_at'              => $paidAt,
                 'special_instructions' => $request->input('special_instructions'),
-            ]);
+            ];
+
+            // Only include payment_details if the DB column exists (avoids unknown column errors)
+            if (Schema::hasTable('checkouts') && Schema::hasColumn('checkouts', 'payment_details')) {
+                $checkoutData['payment_details'] = $paymentDetails;
+            }
+
+            $checkout = Checkout::create($checkoutData);
 
             // ✅ INSERT MULTIPLE ITEMS
             foreach ($cartItems as $item) {
@@ -231,7 +261,7 @@ class CheckoutController extends Controller
                 'user_id'           => $user->id,
                 'checkout_id'       => $checkout->checkout_id,
                 'receipt_number'    => $receiptNumber,
-                'payment_method'    => $method,
+                'payment_method'    => $normalizedMethod,
                 'receipt_image'     => $receiptImagePath,
                 'payment_reference' => json_encode($paymentDetails),
                 'paid_amount'       => $paidAmount,
@@ -247,14 +277,16 @@ class CheckoutController extends Controller
                 'notes'       => $request->input('special_instructions'),
             ]);
 
-            // ✅ MARK CART AS CHECKED OUT
-            Cart::whereIn('cart_id', $cartIds)
-                ->update(['is_checkout' => true]);
+            // ✅ MARK CART AS CHECKED OUT (only when column exists)
+            if (Schema::hasTable('cart') && Schema::hasColumn('cart', 'is_checkout')) {
+                Cart::whereIn('cart_id', $cartIds)
+                    ->update(['is_checkout' => true]);
+            }
 
             ActivityLog::log($user, 'Made a payment', 'payments', [
                 'product_unique_code' => $receiptNumber,
                 'amount'              => $paidAmount,
-                'mode_of_payment'     => $method,
+                'mode_of_payment'     => $normalizedMethod,
                 'description'         => $user->first_name
                     . ' placed an order — ₱' . number_format($paidAmount, 2),
                 'reference_table'     => 'checkouts',
