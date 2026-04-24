@@ -33,9 +33,37 @@ public function index(Request $request)
             $checkout->receipt->receipt_image_url = asset('storage/' . $checkout->receipt->receipt_image);
         }
 
+        // Build a normalized delivery_address object from flat columns so
+        // clients (including PDF exporters) can reliably read the address.
+        $deliveryAddress = [
+            'street'   => $checkout->delivery_street ?? null,
+            'barangay' => $checkout->delivery_barangay ?? null,
+            'city'     => $checkout->delivery_city ?? null,
+            'province' => $checkout->delivery_province ?? null,
+            'postal'   => $checkout->delivery_zip ?? null,
+            'country'  => $checkout->delivery_country ?? null,
+        ];
+
+        // A formatted single-line address for simple PDF templates.
+        $parts = array_filter([
+            $deliveryAddress['street'],
+            $deliveryAddress['barangay'],
+            $deliveryAddress['city'],
+            $deliveryAddress['province'],
+            $deliveryAddress['postal'],
+            $deliveryAddress['country'],
+        ]);
+        $formatted = $parts ? implode(', ', $parts) : null;
+
+        // Attach to the model instance for convenience for any other consumers
+        $checkout->delivery_address = $deliveryAddress;
+        $checkout->delivery_address_formatted = $formatted;
+
         return [
             'checkout' => $checkout,
             'delivery' => $checkout->delivery,
+            'delivery_address' => $deliveryAddress,
+            'delivery_address_formatted' => $formatted,
         ];
     });
 

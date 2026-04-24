@@ -14,10 +14,24 @@ class AdminsettingsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $settings = adminsettings::pluck('value', 'key');
-        return response()->json(['data' => $settings]);
+
+        // compute ETag based on the stored appearance value and its updated_at
+        $appearanceRow = adminsettings::where('key', 'appearance')->first();
+        $appearance = $appearanceRow?->value ?? null;
+        $updatedAt = $appearanceRow?->updated_at?->toIso8601String() ?? '';
+        $etag = md5(($appearance ?? '') . '|' . $updatedAt);
+
+        // If client has the same ETag, return 304 to allow cheap polling
+        if ($request->headers->get('if-none-match') === $etag) {
+            return response('', 304)->header('ETag', $etag);
+        }
+
+        return response()->json(['data' => $settings])
+                         ->header('ETag', $etag)
+                         ->header('Last-Modified', $updatedAt ?: now()->toRfc7231String());
     }
 
     /**
@@ -73,7 +87,16 @@ class AdminsettingsController extends Controller
             }
         }
 
-        return response()->json(['message' => 'Settings saved successfully']);
+        // compute ETag for the saved appearance and return it to callers
+        $appearanceRow = adminsettings::where('key', 'appearance')->first();
+        $appearance = $appearanceRow?->value ?? ($fields['appearance'] ?? null);
+        $updatedAt = $appearanceRow?->updated_at?->toIso8601String() ?? now()->toIso8601String();
+        $etag = md5(($appearance ?? '') . '|' . $updatedAt);
+
+        return response()->json([
+            'message' => 'Settings saved successfully',
+            'data' => ['appearance' => $appearance],
+        ])->header('ETag', $etag);
     }
 
     /**
