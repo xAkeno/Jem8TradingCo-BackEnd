@@ -7,16 +7,31 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Testing\Fluent\Concerns\Has;
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Redis;
 
 class AdminsettingsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $settings = adminsettings::pluck('value', 'key');
-        return response()->json(['data' => $settings]);
+
+        // compute ETag based on the stored appearance value and its updated_at
+        $appearanceRow = adminsettings::where('key', 'appearance')->first();
+        $appearance = $appearanceRow?->value ?? null;
+        $updatedAt = $appearanceRow?->updated_at?->toIso8601String() ?? '';
+        $etag = md5(($appearance ?? '') . '|' . $updatedAt);
+
+        // If client has the same ETag, return 304 to allow cheap polling
+        if ($request->headers->get('if-none-match') === $etag) {
+            return response('', 304)->header('ETag', $etag);
+        }
+
+        return response()->json(['data' => $settings])
+                         ->header('ETag', $etag)
+                         ->header('Last-Modified', $updatedAt ?: now()->toRfc7231String());
     }
 
     /**
@@ -44,6 +59,7 @@ class AdminsettingsController extends Controller
             'sessionTimeout' => 'sometimes|integer|min:1|max:999',
             'primaryColor'   => 'sometimes|string|max:7',
             'theme'          => 'sometimes|in:light,dark,auto',
+            'appearance'     => 'sometimes|in:light,dark,auto',
             'require2FA'     => 'sometimes|boolean',
         ]);
 
@@ -51,7 +67,7 @@ class AdminsettingsController extends Controller
             'siteName', 'siteURL', 'adminEmail', 'contactNumber',
             'companyAddress', 'timezone', 'language',
             'passwordLockout', 'sessionTimeout',
-            'primaryColor', 'theme', 'require2FA',
+            'primaryColor', 'theme', 'appearance', 'require2FA',
         ]);
 
         foreach ($fields as $key => $value) {
@@ -61,7 +77,26 @@ class AdminsettingsController extends Controller
             );
         }
 
-        return response()->json(['message' => 'Settings saved successfully']);
+        // publish appearance update to Redis so real-time subscribers can react
+        if (array_key_exists('appearance', $fields)) {
+            $payload = json_encode(['appearance' => $fields['appearance']]);
+            try {
+                Redis::publish('appearance-updates', $payload);
+            } catch (\Exception $e) {
+                // non-fatal: publishing failure should not block saving
+            }
+        }
+
+        // compute ETag for the saved appearance and return it to callers
+        $appearanceRow = adminsettings::where('key', 'appearance')->first();
+        $appearance = $appearanceRow?->value ?? ($fields['appearance'] ?? null);
+        $updatedAt = $appearanceRow?->updated_at?->toIso8601String() ?? now()->toIso8601String();
+        $etag = md5(($appearance ?? '') . '|' . $updatedAt);
+
+        return response()->json([
+            'message' => 'Settings saved successfully',
+            'data' => ['appearance' => $appearance],
+        ])->header('ETag', $etag);
     }
 
     /**

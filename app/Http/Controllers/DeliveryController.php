@@ -50,6 +50,14 @@ class DeliveryController extends Controller
                     'shipping_fee'   => $checkout->shipping_fee,
                     'created_at'     => $checkout->created_at,
 
+                    // delivery address fields (so admin panels / PDF exporters can show address)
+                    'delivery_street'   => $checkout->delivery_street ?? null,
+                    'delivery_barangay' => $checkout->delivery_barangay ?? null,
+                    'delivery_city'     => $checkout->delivery_city ?? null,
+                    'delivery_province' => $checkout->delivery_province ?? null,
+                    'delivery_zip'      => $checkout->delivery_zip ?? null,
+                    'delivery_country'  => $checkout->delivery_country ?? null,
+
                     // ✅ ADD THIS BLOCK — was missing entirely before
                     'user' => $checkout->user ? [
                         'first_name'   => $checkout->user->first_name,
