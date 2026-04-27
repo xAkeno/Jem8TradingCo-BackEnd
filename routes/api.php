@@ -24,7 +24,6 @@ use App\Http\Controllers\AdminsettingsController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\NotificationsController;
 // Public routes
 // enforce numeric `{id}` route parameter globally
 Route::pattern('id', '[0-9]+');
@@ -87,14 +86,6 @@ Route::delete('/accounts/{id}', [AccountController::class, 'adminDestroy']);
     Route::get('/my-deliveries', [DeliveryController::class, 'indexUser']);
     Route::get('/deliveries', [DeliveryController::class, 'index']);
     Route::patch('/deliveries/{deliveryId}/status', [DeliveryController::class, 'updateStatus']);
-
-    // Notifications
-    Route::get('/notifications', [NotificationsController::class, 'index']);
-    Route::get('/notifications/unread', [NotificationsController::class, 'unreadCount']);
-    Route::post('/notifications/mark-read', [NotificationsController::class, 'markRead']);
-    Route::post('/notifications/mark-all-read', [NotificationsController::class, 'markAllRead']);
-    // Dev helper: simulate a notification for the authenticated user
-    Route::post('/notifications/simulate', [NotificationsController::class, 'simulate']);
 
     Route::get('/showAllUser', [AccountController::class, 'index']);
     Route::get('/showUser/{id}', [AccountController::class, 'show']);
