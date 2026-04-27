@@ -50,6 +50,14 @@ class DeliveryController extends Controller
                     'shipping_fee'   => $checkout->shipping_fee,
                     'created_at'     => $checkout->created_at,
 
+                    // delivery address fields (so admin panels / PDF exporters can show address)
+                    'delivery_street'   => $checkout->delivery_street ?? null,
+                    'delivery_barangay' => $checkout->delivery_barangay ?? null,
+                    'delivery_city'     => $checkout->delivery_city ?? null,
+                    'delivery_province' => $checkout->delivery_province ?? null,
+                    'delivery_zip'      => $checkout->delivery_zip ?? null,
+                    'delivery_country'  => $checkout->delivery_country ?? null,
+
                     // ✅ ADD THIS BLOCK — was missing entirely before
                     'user' => $checkout->user ? [
                         'first_name'   => $checkout->user->first_name,
@@ -138,44 +146,52 @@ class DeliveryController extends Controller
         $orders = $checkouts->map(function ($checkout) {
 
             return [
-                'checkout' => [
-                    'checkout_id' => $checkout->checkout_id,
-                    'payment_method' => $checkout->payment_method,
-                    'payment_details' => $checkout->payment_details,
-                    'shipping_fee' => $checkout->shipping_fee,
-                    'paid_amount' => $checkout->paid_amount,
-                    'paid_at' => $checkout->paid_at,
-                    'special_instructions' => $checkout->special_instructions,
-                    'created_at' => $checkout->created_at,
+'checkout' => [
+    'checkout_id'          => $checkout->checkout_id,
+    'payment_method'       => $checkout->payment_method,
+    'payment_details'      => $checkout->payment_details,
+    'shipping_fee'         => $checkout->shipping_fee,
+    'paid_amount'          => $checkout->paid_amount,
+    'paid_at'              => $checkout->paid_at,
+    'special_instructions' => $checkout->special_instructions,
+    'created_at'           => $checkout->created_at,
 
-                    // RECEIPT
-                    'receipt' => $checkout->receipt ? [
-                        'receipt_id' => $checkout->receipt->receipt_id,
-                        'receipt_number' => $checkout->receipt->receipt_number,
-                        'receipt_image_url' => $checkout->receipt->receipt_image
-                            ? asset('storage/' . $checkout->receipt->receipt_image)
-                            : null,
-                    ] : null,
+    // ✅ ADD THESE
+    'delivery_street'   => $checkout->delivery_street,
+    'delivery_barangay' => $checkout->delivery_barangay,
+    'delivery_city'     => $checkout->delivery_city,
+    'delivery_province' => $checkout->delivery_province,
+    'delivery_zip'      => $checkout->delivery_zip,
+    'delivery_country'  => $checkout->delivery_country,
 
-                    // ITEMS + IMAGE FIX
-                    'items' => $checkout->items->map(function ($item) {
+    // RECEIPT
+    'receipt' => $checkout->receipt ? [
+        'receipt_id'        => $checkout->receipt->receipt_id,
+        'receipt_number'    => $checkout->receipt->receipt_number,
+        'receipt_image_url' => $checkout->receipt->receipt_image
+            ? asset('storage/' . $checkout->receipt->receipt_image)
+            : null,
+    ] : null,
 
-                        $product = $item->product;
+    // ITEMS + IMAGE FIX
+    'items' => $checkout->items->map(function ($item) {
 
-                        return [
-                            'product_id'   => $item->product_id,
-                            'product_name' => $product->product_name ?? null,
-                            'price'        => $item->price,
-                            'quantity'     => $item->quantity,
-                            'total'        => $item->price * $item->quantity,
+        $product = $item->product;
 
-                            'image' => $product?->primary_image_url
-                                ?? (optional($product->images->first())->image_path
-                                    ? asset('storage/' . $product->images->first()->image_path)
-                                    : null),
-                        ];
-                    }),
-                ],
+        return [
+            'product_id'   => $item->product_id,
+            'product_name' => $product->product_name ?? null,
+            'price'        => $item->price,
+            'quantity'     => $item->quantity,
+            'total'        => $item->price * $item->quantity,
+
+            'image' => $product?->primary_image_url
+                ?? (optional($product->images->first())->image_path
+                    ? asset('storage/' . $product->images->first()->image_path)
+                    : null),
+        ];
+    }),
+],
 
                 'delivery' => $checkout->delivery
             ];

@@ -13,26 +13,31 @@ class Checkout extends Model
     protected $table      = 'checkouts';
     protected $primaryKey = 'checkout_id';
 
-    protected $fillable = [
-        'user_id',
-        'cart_id',
-        'discount_id',
-        'payment_method',
-        'payment_details',
-        'shipping_fee',
-        'paid_amount',
-        'paid_at',
-        'special_instructions',
-        'delivery_address',
-    ];
+protected $fillable = [
+    'user_id',
+    'cart_id',
+    'discount_id',
+    'payment_method',
+    'payment_details',
+    'shipping_fee',
+    'paid_amount',
+    'paid_at',
+    'special_instructions',
+    'delivery_street',
+    'delivery_barangay',
+    'delivery_city',
+    'delivery_province',
+    'delivery_zip',
+    'delivery_country',
+];
 
-    protected $casts = [
-        'payment_details' => 'array',
-        'delivery_address' => 'array',
-        'shipping_fee'    => 'double',
-        'paid_amount'     => 'double',
-        'paid_at'         => 'datetime',
-    ];
+protected $casts = [
+    'payment_details' => 'array',
+    // ❌ remove 'delivery_address' => 'array' if still there
+    'shipping_fee'    => 'double',
+    'paid_amount'     => 'double',
+    'paid_at'         => 'datetime',
+];
 
     public function user()
     {
