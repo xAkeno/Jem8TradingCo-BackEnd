@@ -180,8 +180,8 @@ class AdminProductController extends Controller
                 'images'            => 'sometimes|array',
                 'images.*'          => 'image|mimes:jpeg,png,jpg,gif|max:5120',
                 'remove_images'     => 'sometimes|array',
-                'remove_images.*'   => 'integer|exists:product_images,image_id',
-                'set_primary_image' => 'sometimes|integer|exists:product_images,image_id',
+                'remove_images.*'   => 'integer|exists:product_images,id',
+                'set_primary_image' => 'sometimes|integer|exists:product_images,id',
             ]);
 
             $product = Product::find($id);
@@ -192,7 +192,7 @@ class AdminProductController extends Controller
             $product->update($request->only(['product_name','category_id','description','price','isSale','acquired_price','unit','size','color','status']));
 
             if ($request->has('remove_images')) {
-                $imagesToRemove = ProductImage::whereIn('image_id', $request->remove_images)
+                $imagesToRemove = ProductImage::whereIn('id', $request->remove_images)
                     ->where('product_id', $product->product_id)->get();
                 foreach ($imagesToRemove as $image) {
                     $filePath = public_path('storage/' . $image->image_path);
@@ -213,7 +213,7 @@ class AdminProductController extends Controller
 
             if ($request->has('set_primary_image')) {
                 $product->images()->update(['is_primary' => false]);
-                ProductImage::where('image_id', $request->set_primary_image)->where('product_id', $product->product_id)->update(['is_primary' => true]);
+                ProductImage::where('id', $request->set_primary_image)->where('product_id', $product->product_id)->update(['is_primary' => true]);
             }
 
             if ($product->images()->where('is_primary', true)->count() === 0 && $product->images()->count() > 0) {
