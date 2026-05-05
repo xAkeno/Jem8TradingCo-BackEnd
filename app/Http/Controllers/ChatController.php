@@ -91,8 +91,8 @@ class ChatController extends Controller
         // Enforce authenticated user as author
         $validated['user_id'] = Auth::id();
 
-        // Choose message text field
-        $validated['messages'] = $validated['messages'] ?? $validated['text'] ?? null;
+        // Choose message text field and default to empty string when not provided
+        $validated['messages'] = $validated['messages'] ?? $validated['text'] ?? '';
 
         // Determine chatroom as before
         if (empty($validated['chatroom_id'])) {
@@ -138,6 +138,11 @@ class ChatController extends Controller
 
         if (count($uploadedFiles) > $maxFiles) {
             return response()->json(['message' => 'Too many files (max '.$maxFiles.')'], 413);
+        }
+
+        // Require either a message text or at least one file
+        if (trim((string) $validated['messages']) === '' && count($uploadedFiles) === 0) {
+            return response()->json(['message' => 'Either message text or at least one file is required'], 422);
         }
 
         // Transaction: create message, store files metadata
